@@ -2,7 +2,7 @@ import { createHash, createHmac, randomBytes } from "node:crypto";
 import { Router, type Express, type Request, type Response } from "express";
 import { getAdminSessionForRequest, isAdminCsrfRequestValid } from "./adminAuth.js";
 
-const PRODUCT_API_ORIGIN = "https://mental-gaming-api.vercel.app";
+const PRODUCT_API_ORIGIN = "https://mental-gaming-store.vercel.app";
 const ADMIN_PRODUCT_PREFIX = "/api/admin/products";
 
 export type ProductProxyOptions = {
