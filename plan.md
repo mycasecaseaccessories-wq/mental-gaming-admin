@@ -16,7 +16,7 @@ API တွင် `GET`၊ `POST`၊ `PATCH` ကို ကုန်ပစ္စ�
 
 ## Vercel တွင် တင်ခြင်းနှင့် လျှို့ဝှက်ဆက်တင်
 
-Admin အတွက် သီးခြား private GitHub repository နှင့် `mental-gaming-admin` Vercel project ကို သုံးမည်။ Production လိပ်စာမှာ `https://mental-gaming-store-admin.vercel.app` ဖြစ်သည်။ `MG_PRODUCT_API_SECRET` ကို Admin နှင့် API Vercel project နှစ်ခုစလုံး၏ Production environment တွင် encrypted variable အဖြစ် သတ်မှတ်ရမည်။ ဤလျှို့ဝှက်ဆက်တင် မပြည့်စုံသေးသရွေ့ live product request အလုပ်မလုပ်ပါ။ တန်ဖိုးကို browser code၊ Git သို့မဟုတ် build log တွင် မရေးရ။
+Admin အတွက် သီးခြား private GitHub repository နှင့် `mental-gaming-admin` Vercel project ကို သုံးမည်။ Production လိပ်စာမှာ `https://mental-gaming-store-admin.vercel.app` ဖြစ်သည်။ `MG_PRODUCT_API_SECRET` ကို Admin နှင့် API Vercel project နှစ်ခုစလုံး၏ Production environment တွင် encrypted variable အဖြစ် သတ်မှတ်ရမည်။ ဤလျှို့ဝှက်ဆက်တင် မပြည့်စုံသေးသရွေ့ live product request အလုပ်မလုပ်ပါ။ လျှို့ဝှက်တန်ဖိုးကို browser code၊ Git သို့မဟုတ် build log တွင် မရေးရ။
 
 ## အဓိကဖိုင်များ
 
@@ -27,7 +27,8 @@ Admin အတွက် သီးခြား private GitHub repository နှင�
 - `client/src/App.tsx`, `client/src/pages/Home.tsx`, `client/src/pages/Products.tsx` — ခွင့်ပြုချက်အခြေအနေ၊ dashboard နှင့် product စီမံခန့်ခွဲမှုစာမျက်နှာ။
 - `client/src/lib/adminAuth.ts`, `client/src/lib/products.ts` — browser နှင့် server အကြား API ချိတ်ဆက်မှု။
 - API repository ၏ `src/middlewares/adminProductServiceAuth.ts`, `src/routes/admin.ts`, `src/routes/index.ts` — HMAC၊ timestamp၊ nonce စစ်ဆေးမှုနှင့် product အတွက် သီးခြား route.
-- API repository ၏ `api/[...path].ts`, `api/[...path].js`, `scripts/build-api-bundle.mjs` — Vercel တွင် တကယ်အလုပ်လုပ်သည့် catch-all function ကို source မှပြန်တည်ဆောက်ပြီး product route အသစ်ပါဝင်စေခြင်း။
+- API repository ၏ `scripts/api-vercel-entry.ts`, `api/[...path].js`, `scripts/build-api-bundle.mjs` — Vercel function bundle ကို source မှပြန်တည်ဆောက်ခြင်း။
+- API repository ၏ `api/store/admin-portal/products.js`, `api/store/admin-portal/products/[id].js` — ထုတ်ကုန်စာရင်းဖတ်ခြင်း၊ အသစ်ထည့်ခြင်းနှင့် ID ဖြင့်ပြင်ဆင်ခြင်းအတွက် တိကျသော Vercel လမ်းကြောင်းများ။
 - `vite.config.ts`, `vercel.json` — build နှင့် စာမျက်နှာ refresh လမ်းကြောင်း.
 - `plan.md`, `TODO.md` — အကောင်အထည်ဖော်ရေးအစီအစဉ်နှင့် လုပ်ဆောင်ရန်စာရင်း။
 
