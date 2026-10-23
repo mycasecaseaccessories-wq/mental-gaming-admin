@@ -83,6 +83,21 @@ export async function verifyAdminSession(
   }
 }
 
+export async function getAdminSessionForRequest(req: Request): Promise<AdminSession | null> {
+  const credentials = getCredentials();
+  if (!credentials) return null;
+  const token = parseCookieHeader(req.headers.cookie ?? "")[SESSION_COOKIE];
+  const session = token ? await verifyAdminSession(token, credentials.sessionSecret) : null;
+  return session?.email === credentials.email ? session : null;
+}
+
+export function isAdminCsrfRequestValid(req: Request): boolean {
+  const credentials = getCredentials();
+  return Boolean(
+    credentials && req.is("application/json") && hasValidCsrfToken(req, credentials.sessionSecret),
+  );
+}
+
 function sessionCookieOptions() {
   return {
     httpOnly: true,

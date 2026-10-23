@@ -25,7 +25,7 @@ async function readMessage(response: Response): Promise<string> {
   return "တောင်းဆိုချက် မအောင်မြင်ပါ။ ပြန်ကြိုးစားပါ။";
 }
 
-async function getCsrfToken(): Promise<string> {
+export async function getAdminCsrfToken(): Promise<string> {
   if (cachedCsrfToken && Date.now() - csrfTokenFetchedAt < CSRF_CACHE_MS) {
     return cachedCsrfToken;
   }
@@ -59,7 +59,7 @@ export async function fetchAdminUser(): Promise<AdminUser | null> {
 }
 
 export async function loginAdmin(email: string, password: string): Promise<AdminUser> {
-  const csrfToken = await getCsrfToken();
+  const csrfToken = await getAdminCsrfToken();
   const response = await fetch("/api/admin-auth/login", {
     method: "POST",
     credentials: "include",
@@ -78,7 +78,7 @@ export async function loginAdmin(email: string, password: string): Promise<Admin
 }
 
 export async function logoutAdmin(): Promise<void> {
-  const csrfToken = await getCsrfToken();
+  const csrfToken = await getAdminCsrfToken();
   const response = await fetch("/api/admin-auth/logout", {
     method: "POST",
     credentials: "include",

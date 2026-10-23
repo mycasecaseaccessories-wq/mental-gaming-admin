@@ -4,7 +4,7 @@
 
 ## လျှို့ဝှက် setting များ
 
-အောက်ပါ တန်ဖိုးသုံးခုကို Vercel ၏ Production နှင့် Preview ပတ်ဝန်းကျင်များတွင် encrypted environment settings အဖြစ် ထည့်သွင်းရမည်။
+အောက်ပါ တန်ဖိုးသုံးခုကို Vercel ၏ Production ပတ်ဝန်းကျင်တွင် encrypted environment settings အဖြစ် ထည့်သွင်းရမည်။
 
 - `MG_ADMIN_EMAIL` — ခွင့်ပြုထားသော admin ၏ Gmail လိပ်စာ။
 - `MG_ADMIN_PASSWORD` — ဤ website အတွက် သတ်မှတ်ထားသော၊ အနည်းဆုံး စာလုံးရေ 12 လုံးပါသည့် password။
