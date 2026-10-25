@@ -4,11 +4,13 @@
 
 Mental Gaming အတွက် customer storefront နှင့် သီးခြား Admin website တည်ဆောက်ထားသည်။ Admin သည် Gmail လိပ်စာကို username အဖြစ်သုံးပြီး ဤ website အတွက်သာ သတ်မှတ်ထားသော စကားဝှက်ဖြင့် ဝင်ရောက်မည်။ Google OAuth မသုံးရ၊ Gmail ၏ မူရင်းစကားဝှက်ကို မတောင်း၊ မသုံး၊ မသိမ်းဆည်းရ။ ကြိုတင်ခွင့်ပြုထားသော Admin အကောင့်သာ ဝင်နိုင်ရမည်။
 
-Session ကို သက်တမ်းရှစ်နာရီရှိသော `HttpOnly; Secure; SameSite=None` cookie ဖြင့် ထိန်းသိမ်းမည်။ တောင်းဆိုမှုတစ်ကြိမ်စီတွင် server က JWT ကို စစ်ဆေးမည်။ Login၊ logout နှင့် ကုန်ပစ္စည်းပြောင်းလဲမှု POST request များအတွက် `MG_ADMIN_SESSION_SECRET` ဖြင့် လက်မှတ်ထိုးထားသည့် 10 မိနစ်သက်တမ်းရှိ CSRF token ကို စစ်ဆေးမည်။ သက်တမ်းကုန် session၊ မမှန်သော CSRF လက်မှတ်နှင့် cross-site လုပ်ဆောင်မှုများကို ငြင်းပယ်မည်။
+Session ကို သက်တမ်းရှစ်နာရီရှိသော `HttpOnly; Secure; SameSite=None` cookie ဖြင့် ထိန်းသိမ်းမည်။ တောင်းဆိုမှုတစ်ကြိမ်စီတွင် server က JWT ကို စစ်ဆေးမည်။ Login နှင့် logout POST၊ ထုတ်ကုန်ထည့်သည့် POST နှင့် ထုတ်ကုန်ပြင်သည့် PATCH တို့အတွက် `MG_ADMIN_SESSION_SECRET` ဖြင့် လက်မှတ်ထိုးထားသည့် 10 မိနစ်သက်တမ်းရှိ CSRF token ကို စစ်ဆေးမည်။ သက်တမ်းကုန် session၊ မမှန်သော CSRF လက်မှတ်နှင့် cross-site လုပ်ဆောင်မှုများကို ငြင်းပယ်မည်။
 
 ## အကောင်အထည်ဖော်မှုနည်းလမ်း
 
-Frontend သည် React/Vite၊ server သည် Express/Vercel Function ဖြစ်သည်။ Browser သည် တူညီသော website ရှိ `/api/admin/products` လမ်းကြောင်းကိုသာ ခေါ်မည်။ Server သည် admin session ကိုစစ်ပြီး ကုန်ပစ္စည်းပြောင်းလဲမှုတစ်ခုစီတွင် CSRF ကိုလည်း စစ်မည်။ ထို့နောက် `mental-gaming-api` ရှိ `/api/store/admin-portal/products` လမ်းကြောင်းသို့သာ HMAC လက်မှတ်ပါ server-to-server request ပို့မည်။ `MG_PRODUCT_API_SECRET` ၏တန်ဖိုးကို browser သို့ မပို့ရ။ API server သည် shared secret၊ timestamp၊ တစ်ကြိမ်သာသုံးနိုင်သည့် nonce၊ request method၊ path နှင့် body ကို စစ်ဆေးမည်။ ထပ်မံပို့သော တူညီသည့် လက်မှတ်ကို ငြင်းပယ်မည်။
+Frontend သည် React/Vite၊ server သည် Express/Vercel Function ဖြစ်သည်။ Browser သည် တူညီသော website ရှိ `/api/admin/products` လမ်းကြောင်းကိုသာ ခေါ်မည်။ Server သည် admin session ကိုစစ်ပြီး ကုန်ပစ္စည်းပြောင်းလဲမှုတစ်ခုစီတွင် CSRF ကိုလည်း စစ်မည်။ ထို့နောက် production catalog နှင့် MongoDB ပါဝင်သော `mental-gaming-store` ရှိ `/api/store/admin-portal/products` လမ်းကြောင်းသို့သာ HMAC လက်မှတ်ပါ server-to-server request ပို့မည်။ `MG_PRODUCT_API_SECRET` ၏တန်ဖိုးကို browser သို့ မပို့ရ။ API server သည် shared secret၊ timestamp၊ တစ်ကြိမ်သာသုံးနိုင်သည့် nonce၊ request method၊ path နှင့် body ကို စစ်ဆေးမည်။ ထပ်မံပို့သော တူညီသည့် လက်မှတ်ကို ငြင်းပယ်မည်။
+
+`mental-gaming-api` သီးခြား Vercel project တွင် Production `MONGODB_URI` မရှိသဖြင့် live catalog အတွက် မသုံးရ။ Storefront/API project `mental-gaming-store` ၏ Production catalog သည် လက်ရှိထုတ်ကုန် 56 ခုကို ပြန်ပေးသည်။
 
 API တွင် `GET`၊ `POST`၊ `PATCH` ကို ကုန်ပစ္စည်းအတွက် သီးခြား router မှတစ်ဆင့်သာ ခွင့်ပြုမည်။ လက်ရှိ Telegram admin route များသည် တူညီသော product handler များကို ဆက်လက်သုံးမည်။ Website အတွက် service-auth route သည် Telegram route များနှင့် သီးခြားဖြစ်သည်။ Storefront၊ အသုံးပြုသူနှင့် အခြား API လမ်းကြောင်းများကို ဤ service ခွင့်ပြုချက်မှ ဖယ်ထားမည်။
 
@@ -16,7 +18,7 @@ API တွင် `GET`၊ `POST`၊ `PATCH` ကို ကုန်ပစ္စ�
 
 ## Vercel တွင် တင်ခြင်းနှင့် လျှို့ဝှက်ဆက်တင်
 
-Admin အတွက် သီးခြား private GitHub repository နှင့် `mental-gaming-admin` Vercel project ကို သုံးမည်။ Production လိပ်စာမှာ `https://mental-gaming-store-admin.vercel.app` ဖြစ်သည်။ `MG_PRODUCT_API_SECRET` ကို Admin နှင့် API Vercel project နှစ်ခုစလုံး၏ Production environment တွင် encrypted variable အဖြစ် သတ်မှတ်ရမည်။ ဤလျှို့ဝှက်ဆက်တင် မပြည့်စုံသေးသရွေ့ live product request အလုပ်မလုပ်ပါ။ လျှို့ဝှက်တန်ဖိုးကို browser code၊ Git သို့မဟုတ် build log တွင် မရေးရ။
+Admin အတွက် သီးခြား private GitHub repository နှင့် `mental-gaming-admin` Vercel project ကို သုံးမည်။ Production လိပ်စာမှာ `https://mental-gaming-store-admin.vercel.app` ဖြစ်သည်။ `MG_PRODUCT_API_SECRET` ကို Admin နှင့် catalog/API အဖြစ်အသုံးပြုသော `mental-gaming-store` Vercel project တို့၏ Production environment တွင် sensitive variable အဖြစ် သတ်မှတ်ထားသည်။ လျှို့ဝှက်တန်ဖိုးကို browser code၊ Git သို့မဟုတ် build log တွင် မရေးရ။
 
 ## အဓိကဖိုင်များ
 

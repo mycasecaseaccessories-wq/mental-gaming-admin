@@ -127,6 +127,32 @@ describe("admin product API proxy", () => {
     expect(headers.get("x-mg-signature")).toBe(createHmac("sha256", serviceSecret).update(payload).digest("hex"));
   });
 
+  it("signs an authorized product status update through PATCH", async () => {
+    const csrfToken = await getCsrfToken();
+    const productId = "65a4b9c41e6b2f1e9c2d71a0";
+    const body = { status: "hidden" };
+    const response = await fetch(`${baseUrl}/api/admin/products/${productId}`, {
+      method: "PATCH",
+      headers: {
+        Cookie: sessionCookie,
+        "Content-Type": "application/json",
+        "X-CSRF-Token": csrfToken,
+      },
+      body: JSON.stringify(body),
+    });
+    expect(response.status).toBe(200);
+    expect(upstreamCalls).toBe(1);
+    expect(lastUrl).toBe(`https://store-api.example.test/api/store/admin-portal/products/${productId}`);
+    expect(lastInit?.method).toBe("PATCH");
+    const headers = new Headers(lastInit?.headers);
+    const timestamp = headers.get("x-mg-timestamp") ?? "";
+    const nonce = headers.get("x-mg-nonce") ?? "";
+    const bodyText = JSON.stringify(body);
+    const bodyHash = createHash("sha256").update(bodyText).digest("hex");
+    const payload = ["v1", "PATCH", `/api/store/admin-portal/products/${productId}`, timestamp, nonce, "owner@example.com", bodyHash].join("\n");
+    expect(headers.get("x-mg-signature")).toBe(createHmac("sha256", serviceSecret).update(payload).digest("hex"));
+  });
+
   it("does not proxy paths outside the product API", async () => {
     const csrfToken = await getCsrfToken();
     const response = await fetch(`${baseUrl}/api/admin/products/../../users`, {
