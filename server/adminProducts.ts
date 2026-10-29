@@ -3,12 +3,15 @@ import { Router, type Express, type Request, type Response } from "express";
 import { getAdminSessionForRequest, isAdminCsrfRequestValid } from "./adminAuth.js";
 
 const PRODUCT_API_ORIGIN = "https://mental-gaming-store.vercel.app";
-const ADMIN_PRODUCT_PREFIX = "/api/admin/products";
+const ADMIN_PREFIX = "/api/admin";
+const SERVICE_PREFIX = "/api/store/admin-portal";
 
 export type ProductProxyOptions = {
   apiOrigin?: string;
   fetcher?: typeof fetch;
 };
+
+type PortalMethod = "GET" | "POST" | "PATCH";
 
 function signingPayload(
   method: string,
@@ -22,24 +25,56 @@ function signingPayload(
   return ["v1", method.toUpperCase(), path, timestamp, nonce, email.trim().toLowerCase(), bodyHash].join("\n");
 }
 
-function isAllowedProxyPath(method: string, suffix: string): boolean {
-  if (method === "GET") return suffix === "" || suffix.startsWith("?");
-  if (method === "POST") return suffix === "";
-  return method === "PATCH" && /^\/[a-f0-9]{24}$/i.test(suffix);
+function hasOnlyQueryKeys(search: string, allowedKeys: ReadonlySet<string>): boolean {
+  const keys = [...new URLSearchParams(search).keys()];
+  return keys.every((key, index) => allowedKeys.has(key) && keys.indexOf(key) === index);
+}
+
+function resolveServicePath(method: PortalMethod, originalUrl: string): string | null {
+  if (!originalUrl.startsWith(ADMIN_PREFIX)) return null;
+  const suffix = originalUrl.slice(ADMIN_PREFIX.length);
+  const queryIndex = suffix.indexOf("?");
+  const path = queryIndex < 0 ? suffix : suffix.slice(0, queryIndex);
+  const search = queryIndex < 0 ? "" : suffix.slice(queryIndex + 1);
+  const hasQuery = queryIndex >= 0 && search.length > 0;
+
+  if (path === "/products") {
+    if (method === "POST") return hasQuery ? null : `${SERVICE_PREFIX}${suffix}`;
+    if (method === "GET" && (!hasQuery || hasOnlyQueryKeys(search, new Set(["page", "search", "catalogId"])))) {
+      return `${SERVICE_PREFIX}${suffix}`;
+    }
+    return null;
+  }
+  if (path === "/catalogs") {
+    if (method === "GET" && !hasQuery) return `${SERVICE_PREFIX}${suffix}`;
+    return null;
+  }
+  if (path === "/media") {
+    if (method === "POST" && !hasQuery) return `${SERVICE_PREFIX}${suffix}`;
+    return null;
+  }
+  if (/^\/products\/[a-f0-9]{24}$/i.test(path) && method === "PATCH" && !hasQuery) {
+    return `${SERVICE_PREFIX}${suffix}`;
+  }
+  if (/^\/catalogs\/[a-f0-9]{24}$/i.test(path) && method === "PATCH" && !hasQuery) {
+    return `${SERVICE_PREFIX}${suffix}`;
+  }
+  return null;
 }
 
 function errorForStatus(status: number): string {
-  if (status === 400) return "ထည့်သွင်းထားသော ကုန်ပစ္စည်းအချက်အလက်ကို ပြန်စစ်ဆေးပါ။";
-  if (status === 404) return "ကုန်ပစ္စည်းကို မတွေ့ပါ။ စာရင်းကို ပြန်လည်ဖွင့်ပါ။";
-  if (status === 409) return "တောင်းဆိုမှုကို လက်ခံမရပါ။ စာမျက်နှာကို ပြန်လည်ဖွင့်ပြီး ထပ်ကြိုးစားပါ။";
-  if (status === 429) return "တောင်းဆိုမှုများ များနေပါသည်။ ခဏစောင့်ပြီး ထပ်ကြိုးစားပါ။";
+  if (status === 400) return "ထည့်သွင်းထားသော အချက်အလက် သို့မဟုတ် ပုံကို စစ်ဆေးပြီး ထပ်ကြိုးစားပါ။";
+  if (status === 404) return "ရွေးထားသော အုပ်စု၊ ကုန်ပစ္စည်း သို့မဟုတ် ပုံကို ရှာမတွေ့ပါ။";
+  if (status === 409) return "တောင်းဆိုမှုကို အတည်မပြုနိုင်ပါ။ စာမျက်နှာကို ပြန်ဖွင့်ပြီး ထပ်ကြိုးစားပါ။";
+  if (status === 413) return "ပုံဖိုင်အရွယ်အစား ကြီးလွန်းနေသည်။ အရွယ်သေးသောပုံကို ရွေးပါ။";
+  if (status === 429) return "တောင်းဆိုမှု များနေပါသည်။ ခဏစောင့်ပြီး ထပ်ကြိုးစားပါ။";
   return "ဆိုင်ဒေတာဆာဗာနှင့် ချိတ်ဆက်၍ မရပါ။ ခဏစောင့်ပြီး ထပ်ကြိုးစားပါ။";
 }
 
-async function sendProductRequest(
+async function sendPortalRequest(
   req: Request,
   res: Response,
-  method: "GET" | "POST" | "PATCH",
+  method: PortalMethod,
   options: Required<ProductProxyOptions>,
 ): Promise<void> {
   const session = await getAdminSessionForRequest(req);
@@ -53,21 +88,18 @@ async function sendProductRequest(
     return;
   }
 
+  const apiPath = resolveServicePath(method, req.originalUrl);
+  if (!apiPath) {
+    res.status(404).json({ error: "စာမျက်နှာ မတွေ့ပါ။" });
+    return;
+  }
+
   const secret = process.env["MG_PRODUCT_API_SECRET"] ?? "";
   if (Buffer.byteLength(secret, "utf8") < 32) {
     res.status(503).json({ error: "ကုန်ပစ္စည်း API လုံခြုံရေးဆက်တင် မပြည့်စုံသေးပါ။" });
     return;
   }
 
-  const suffix = req.originalUrl.startsWith(ADMIN_PRODUCT_PREFIX)
-    ? req.originalUrl.slice(ADMIN_PRODUCT_PREFIX.length)
-    : "!invalid";
-  if (!isAllowedProxyPath(method, suffix)) {
-    res.status(404).json({ error: "စာမျက်နှာ မတွေ့ပါ။" });
-    return;
-  }
-
-  const apiPath = `/api/store/admin-portal/products${suffix}`;
   const timestamp = Math.floor(Date.now() / 1000).toString();
   const nonce = randomBytes(18).toString("base64url");
   const bodyText = method === "GET" ? "" : JSON.stringify(req.body ?? {});
@@ -87,14 +119,15 @@ async function sendProductRequest(
         "X-MG-Signature": signature,
       },
       ...(method === "GET" ? {} : { body: bodyText }),
-      signal: AbortSignal.timeout(12_000),
+      signal: AbortSignal.timeout(15_000),
       cache: "no-store",
     });
 
     if (!upstream.ok) {
-      res.status(upstream.status >= 400 && upstream.status < 500 && upstream.status !== 401 && upstream.status !== 403
+      const status = upstream.status >= 400 && upstream.status < 500 && upstream.status !== 401 && upstream.status !== 403
         ? upstream.status
-        : 502).json({ error: errorForStatus(upstream.status) });
+        : 502;
+      res.status(status).json({ error: errorForStatus(upstream.status) });
       return;
     }
 
@@ -118,8 +151,11 @@ export function registerAdminProductRoutes(app: Express, options: ProductProxyOp
     fetcher: options.fetcher ?? fetch,
   };
   const router = Router();
-  router.get("/products", (req, res) => void sendProductRequest(req, res, "GET", resolvedOptions));
-  router.post("/products", (req, res) => void sendProductRequest(req, res, "POST", resolvedOptions));
-  router.patch("/products/:id", (req, res) => void sendProductRequest(req, res, "PATCH", resolvedOptions));
-  app.use("/api/admin", router);
+  router.get("/products", (req, res) => void sendPortalRequest(req, res, "GET", resolvedOptions));
+  router.post("/products", (req, res) => void sendPortalRequest(req, res, "POST", resolvedOptions));
+  router.patch("/products/:id", (req, res) => void sendPortalRequest(req, res, "PATCH", resolvedOptions));
+  router.get("/catalogs", (req, res) => void sendPortalRequest(req, res, "GET", resolvedOptions));
+  router.patch("/catalogs/:id", (req, res) => void sendPortalRequest(req, res, "PATCH", resolvedOptions));
+  router.post("/media", (req, res) => void sendPortalRequest(req, res, "POST", resolvedOptions));
+  app.use(ADMIN_PREFIX, router);
 }

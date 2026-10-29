@@ -5,12 +5,14 @@ import {
   Database,
   Gamepad2,
   LayoutDashboard,
+  Layers,
   LogOut,
   Package,
   ShieldCheck,
 } from "lucide-react";
 import type { AdminUser } from "@/lib/adminAuth";
 import Products from "@/pages/Products";
+import Catalogs from "@/pages/Catalogs";
 
 type HomeProps = {
   user: AdminUser;
@@ -22,6 +24,7 @@ export default function Home({ user, onLogout }: HomeProps) {
   const [loggingOut, setLoggingOut] = useState(false);
   const [logoutError, setLogoutError] = useState("");
   const isProductsPage = location === "/products";
+  const isCatalogsPage = location === "/catalogs";
 
   async function handleLogout() {
     if (loggingOut) return;
@@ -56,15 +59,20 @@ export default function Home({ user, onLogout }: HomeProps) {
 
         <div className="mt-10 px-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-600">စနစ်</div>
         <nav className="mt-3 space-y-1" aria-label="ပင်မမီနူး">
-          <Link href="/dashboard" className={navLinkClass(!isProductsPage)} aria-current={!isProductsPage ? "page" : undefined}>
+          <Link href="/dashboard" className={navLinkClass(!isProductsPage && !isCatalogsPage)} aria-current={!isProductsPage && !isCatalogsPage ? "page" : undefined}>
             <LayoutDashboard size={17} aria-hidden="true" />
             အနှစ်ချုပ်
-            {!isProductsPage && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-cyan-200" />}
+            {!isProductsPage && !isCatalogsPage && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-cyan-200" />}
           </Link>
           <Link href="/products" className={navLinkClass(isProductsPage)} aria-current={isProductsPage ? "page" : undefined}>
             <Package size={17} aria-hidden="true" />
             ကုန်ပစ္စည်းများ
             {isProductsPage && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-cyan-200" />}
+          </Link>
+          <Link href="/catalogs" className={navLinkClass(isCatalogsPage)} aria-current={isCatalogsPage ? "page" : undefined}>
+            <Layers size={17} aria-hidden="true" />
+            အုပ်စုနှင့် ပုံများ
+            {isCatalogsPage && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-cyan-200" />}
           </Link>
         </nav>
 
@@ -80,8 +88,8 @@ export default function Home({ user, onLogout }: HomeProps) {
       <main className="dashboard-main min-w-0">
         <header className="dashboard-topbar flex min-h-[76px] items-center justify-between border-b border-white/8 px-5 sm:px-8">
           <div className="flex items-center gap-2 text-sm text-slate-400">
-            {isProductsPage ? <Package size={16} className="text-cyan-200" aria-hidden="true" /> : <LayoutDashboard size={16} className="text-cyan-200" aria-hidden="true" />}
-            <span>{isProductsPage ? "ကုန်ပစ္စည်းများ" : "အနှစ်ချုပ်"}</span>
+            {isProductsPage ? <Package size={16} className="text-cyan-200" aria-hidden="true" /> : isCatalogsPage ? <Layers size={16} className="text-cyan-200" aria-hidden="true" /> : <LayoutDashboard size={16} className="text-cyan-200" aria-hidden="true" />}
+            <span>{isProductsPage ? "ကုန်ပစ္စည်းများ" : isCatalogsPage ? "အုပ်စုနှင့် ပုံများ" : "အနှစ်ချုပ်"}</span>
           </div>
           <div className="flex items-center gap-3">
             <div className="hidden text-right sm:block">
@@ -106,6 +114,8 @@ export default function Home({ user, onLogout }: HomeProps) {
         <div className="mx-auto w-full max-w-6xl px-5 py-8 sm:px-8 sm:py-10">
           {isProductsPage ? (
             <Products />
+          ) : isCatalogsPage ? (
+            <Catalogs />
           ) : (
             <>
               <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">

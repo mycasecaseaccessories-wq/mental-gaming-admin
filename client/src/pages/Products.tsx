@@ -15,6 +15,8 @@ import {
   Search,
   X,
 } from "lucide-react";
+import ImageUploadField from "@/components/ImageUploadField";
+import { fetchCatalogs, flattenCatalogs, type FlatCatalog } from "@/lib/catalogs";
 import {
   createProduct,
   fetchProducts,
@@ -29,6 +31,7 @@ import {
 type FormValues = {
   name: string;
   category: string;
+  catalogId: string;
   region: string;
   productType: ProductType;
   finalPrice: string;
@@ -43,6 +46,7 @@ type FormValues = {
 const EMPTY_FORM: FormValues = {
   name: "",
   category: "",
+  catalogId: "",
   region: "Global",
   productType: "DirectTopup",
   finalPrice: "",
@@ -68,11 +72,15 @@ const STATUS_STYLES: Record<ProductStatus, string> = {
   hidden: "border-slate-400/20 bg-slate-400/[0.07] text-slate-300",
 };
 
-function formFromProduct(product?: AdminProduct): FormValues {
+function formFromProduct(product?: AdminProduct, catalogs: FlatCatalog[] = []): FormValues {
   if (!product) return EMPTY_FORM;
+  const nameMatches = catalogs.filter((catalog) => catalog.name === product.category);
+  const matchingCatalog = catalogs.find((catalog) => catalog.id === product.catalogId)
+    ?? (nameMatches.length === 1 ? nameMatches[0] : undefined);
   return {
     name: product.name,
     category: product.category,
+    catalogId: matchingCatalog?.id ?? "",
     region: product.region,
     productType: product.productType,
     finalPrice: String(product.finalPrice),
@@ -98,16 +106,19 @@ function messageFor(error: unknown): string {
 function ProductDialog({
   product,
   saving,
+  catalogs,
   onClose,
   onSave,
 }: {
   product: AdminProduct | null;
   saving: boolean;
+  catalogs: FlatCatalog[];
   onClose: () => void;
   onSave: (input: ProductInput) => Promise<void>;
 }) {
-  const [values, setValues] = useState<FormValues>(() => formFromProduct(product ?? undefined));
+  const [values, setValues] = useState<FormValues>(() => formFromProduct(product ?? undefined, catalogs));
   const [error, setError] = useState("");
+  const [imageUploading, setImageUploading] = useState(false);
 
   function setField<K extends keyof FormValues>(key: K, value: FormValues[K]) {
     setValues((current) => ({ ...current, [key]: value }));
@@ -115,6 +126,7 @@ function ProductDialog({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (imageUploading) return;
     setError("");
     const finalPrice = Number(values.finalPrice);
     const flashSalePrice = values.flashSalePrice.trim() === "" ? null : Number(values.flashSalePrice);
@@ -136,9 +148,24 @@ function ProductDialog({
       setError("အစီအစဉ်နံပါတ်ကို ကိန်းပြည့် ထည့်သွင်းပါ။");
       return;
     }
+    const selectedCatalog = catalogs.find((catalog) => catalog.id === values.catalogId);
+    if (!selectedCatalog || (!selectedCatalog.isActive && product?.catalogId !== selectedCatalog.id)) {
+      setError("အသုံးပြုနေသော အုပ်စု သို့မဟုတ် အုပ်စုခွဲကို ရွေးချယ်ပါ။");
+      return;
+    }
+    const imageUrl = values.imageUrl.trim();
+    if (imageUrl && imageUrl !== product?.imageUrl) {
+      try {
+        if (new URL(imageUrl).protocol !== "https:") throw new Error();
+      } catch {
+        setError("ပုံလိပ်စာတွင် HTTPS ကို အသုံးပြုပါ။");
+        return;
+      }
+    }
     const input: ProductInput = {
       name: values.name.trim(),
-      category: values.category.trim(),
+      category: selectedCatalog.name,
+      catalogId: selectedCatalog.id,
       region: values.region.trim() || "Global",
       productType: values.productType,
       finalPrice,
@@ -146,7 +173,7 @@ function ProductDialog({
       stockCount,
       isActive: values.status !== "hidden",
       status: values.status,
-      imageUrl: values.imageUrl.trim() || null,
+      imageUrl: imageUrl || null,
       description: values.description.trim(),
       sortOrder,
     };
@@ -161,7 +188,7 @@ function ProductDialog({
   const labelClass = "block text-xs font-medium text-slate-300";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-0 backdrop-blur-sm sm:items-center sm:p-5" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !saving) onClose(); }}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-0 backdrop-blur-sm sm:items-center sm:p-5" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !saving && !imageUploading) onClose(); }}>
       <section role="dialog" aria-modal="true" aria-labelledby="product-form-title" className="max-h-[94vh] w-full max-w-3xl overflow-y-auto rounded-t-3xl border border-white/10 bg-[#101827] p-5 shadow-2xl sm:rounded-3xl sm:p-7">
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
@@ -170,7 +197,7 @@ function ProductDialog({
               {product ? "ကုန်ပစ္စည်းအချက်အလက် ပြင်ဆင်ရန်" : "ကုန်ပစ္စည်းအသစ် ထည့်ရန်"}
             </h2>
           </div>
-          <button type="button" onClick={onClose} disabled={saving} aria-label="ပိတ်ရန်" className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 text-slate-300 hover:bg-white/5 disabled:opacity-50">
+          <button type="button" onClick={onClose} disabled={saving || imageUploading} aria-label="ပိတ်ရန်" className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 text-slate-300 hover:bg-white/5 disabled:opacity-50">
             <X size={17} aria-hidden="true" />
           </button>
         </div>
@@ -180,8 +207,15 @@ function ProductDialog({
             <label className={labelClass}>ကုန်ပစ္စည်းအမည် *
               <input className={inputClass} required maxLength={160} value={values.name} onChange={(event) => setField("name", event.target.value)} placeholder="ဥပမာ — Diamonds 100" />
             </label>
-            <label className={labelClass}>အုပ်စုအမည် *
-              <input className={inputClass} required maxLength={100} value={values.category} onChange={(event) => setField("category", event.target.value)} placeholder="ဥပမာ — Mobile Legends" />
+            <label className={labelClass}>အုပ်စု / အုပ်စုခွဲ *
+              <select className={inputClass} required value={values.catalogId} onChange={(event) => {
+                const catalog = catalogs.find((item) => item.id === event.target.value);
+                setField("catalogId", event.target.value);
+                setField("category", catalog?.name ?? "");
+              }}>
+                <option value="">အုပ်စုကို ရွေးပါ</option>
+                {catalogs.map((catalog) => <option key={catalog.id} value={catalog.id} disabled={!catalog.isActive && product?.catalogId !== catalog.id}>{catalog.displayName}{catalog.isActive ? "" : " (ဖျောက်ထားသည်)"}</option>)}
+              </select>
             </label>
             <label className={labelClass}>ဒေသ သို့မဟုတ် ဆာဗာ
               <input className={inputClass} maxLength={100} value={values.region} onChange={(event) => setField("region", event.target.value)} placeholder="Global" />
@@ -210,6 +244,9 @@ function ProductDialog({
             <label className={labelClass}>ပုံလိပ်စာ (URL)
               <input className={inputClass} type="url" value={values.imageUrl} onChange={(event) => setField("imageUrl", event.target.value)} placeholder="https://..." />
             </label>
+            <div className="sm:col-span-2">
+              <ImageUploadField value={values.imageUrl} onChange={(url) => setField("imageUrl", url)} disabled={saving} onUploadingChange={setImageUploading} label="ကုန်ပစ္စည်းပုံကို ဖုန်း သို့မဟုတ် ကွန်ပျူတာမှ တင်ရန်" />
+            </div>
             <label className={labelClass}>စီစဉ်မှုနံပါတ်
               <input className={inputClass} type="number" step="1" value={values.sortOrder} onChange={(event) => setField("sortOrder", event.target.value)} />
             </label>
@@ -222,8 +259,8 @@ function ProductDialog({
           {error && <p role="alert" className="rounded-xl border border-rose-300/20 bg-rose-300/[0.08] px-4 py-3 text-sm text-rose-200">{error}</p>}
 
           <div className="flex flex-col-reverse gap-3 border-t border-white/8 pt-5 sm:flex-row sm:justify-end">
-            <button type="button" onClick={onClose} disabled={saving} className="h-11 rounded-xl border border-white/10 px-5 text-sm text-slate-300 hover:bg-white/[0.04] disabled:opacity-50">မလုပ်တော့ပါ</button>
-            <button type="submit" disabled={saving} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-cyan-300 px-5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-wait disabled:opacity-60">
+            <button type="button" onClick={onClose} disabled={saving || imageUploading} className="h-11 rounded-xl border border-white/10 px-5 text-sm text-slate-300 hover:bg-white/[0.04] disabled:opacity-50">မလုပ်တော့ပါ</button>
+            <button type="submit" disabled={saving || imageUploading} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-cyan-300 px-5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-wait disabled:opacity-60">
               {saving ? <LoaderCircle size={16} className="animate-spin" aria-hidden="true" /> : <CheckCircle2 size={16} aria-hidden="true" />}
               {saving ? "သိမ်းဆည်းနေသည်…" : "သိမ်းဆည်းရန်"}
             </button>
@@ -235,6 +272,9 @@ function ProductDialog({
 }
 
 export default function Products() {
+  const [catalogs, setCatalogs] = useState<FlatCatalog[]>([]);
+  const [catalogsLoading, setCatalogsLoading] = useState(true);
+  const [catalogError, setCatalogError] = useState("");
   const [items, setItems] = useState<AdminProduct[]>([]);
   const [total, setTotal] = useState(0);
   const [pages, setPages] = useState(1);
@@ -248,6 +288,15 @@ export default function Products() {
   const [editingProduct, setEditingProduct] = useState<AdminProduct | null>(null);
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    void fetchCatalogs()
+      .then((result) => { if (mounted) setCatalogs(flattenCatalogs(result)); })
+      .catch((loadError: unknown) => { if (mounted) setCatalogError(messageFor(loadError)); })
+      .finally(() => { if (mounted) setCatalogsLoading(false); });
+    return () => { mounted = false; };
+  }, []);
 
   const loadProducts = useCallback(async () => {
     setLoading(true);
@@ -328,7 +377,7 @@ export default function Products() {
           <h1 className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">ကုန်ပစ္စည်းစီမံခန့်ခွဲမှု</h1>
           <p className="mt-2 text-sm leading-6 text-slate-400">ဆိုင်တွင် ပြသမည့်ကုန်ပစ္စည်းများကို ကြည့်ရှု၊ ရှာဖွေ၊ အသစ်ထည့်သွင်းနှင့် ပြင်ဆင်ပါ။</p>
         </div>
-        <button type="button" onClick={openCreateDialog} className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-cyan-300 px-4 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200">
+        <button type="button" onClick={openCreateDialog} disabled={catalogsLoading || !catalogs.some((catalog) => catalog.isActive)} className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-cyan-300 px-4 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-50">
           <Plus size={17} aria-hidden="true" />
           ကုန်ပစ္စည်းအသစ်
         </button>
@@ -353,6 +402,7 @@ export default function Products() {
         </div>
 
         {notice && <p role="status" className="mb-4 flex items-center gap-2 rounded-xl border border-lime-300/15 bg-lime-300/[0.06] px-4 py-3 text-sm text-lime-200"><CheckCircle2 size={16} aria-hidden="true" />{notice}</p>}
+        {catalogError && <p role="alert" className="mb-4 rounded-xl border border-amber-300/20 bg-amber-300/[0.06] px-4 py-3 text-sm text-amber-100">အုပ်စုစာရင်း မရရှိပါ။ {catalogError}</p>}
         {error && <div role="alert" className="mb-4 flex flex-col gap-3 rounded-xl border border-rose-300/20 bg-rose-300/[0.07] px-4 py-3 text-sm text-rose-200 sm:flex-row sm:items-center sm:justify-between"><span className="flex items-start gap-2"><AlertCircle size={16} className="mt-0.5 shrink-0" aria-hidden="true" />{error}</span><button type="button" onClick={() => void loadProducts()} className="self-start rounded-lg border border-rose-200/20 px-3 py-1.5 text-xs hover:bg-rose-200/5 sm:self-auto">ပြန်ကြိုးစားရန်</button></div>}
 
         {loading ? (
@@ -386,7 +436,7 @@ export default function Products() {
                   </div>
                 </div>
                 <div className="flex shrink-0 gap-2 border-t border-white/8 pt-3 sm:border-t-0 sm:pt-0">
-                  <button type="button" onClick={() => openEditDialog(product)} className="inline-flex h-9 flex-1 items-center justify-center gap-2 rounded-lg border border-white/10 px-3 text-xs font-medium text-slate-200 hover:border-cyan-200/30 hover:text-cyan-100 sm:flex-none">
+                  <button type="button" onClick={() => openEditDialog(product)} disabled={catalogsLoading || catalogs.length === 0} className="inline-flex h-9 flex-1 items-center justify-center gap-2 rounded-lg border border-white/10 px-3 text-xs font-medium text-slate-200 hover:border-cyan-200/30 hover:text-cyan-100 disabled:opacity-50 sm:flex-none">
                     <Pencil size={14} aria-hidden="true" /> ပြင်ဆင်ရန်
                   </button>
                   <button type="button" onClick={() => void toggleVisibility(product)} disabled={busyId === product.id} className="inline-flex h-9 flex-1 items-center justify-center gap-2 rounded-lg border border-white/10 px-3 text-xs font-medium text-slate-300 hover:border-amber-200/25 hover:text-amber-100 disabled:cursor-wait disabled:opacity-60 sm:flex-none">
@@ -408,7 +458,7 @@ export default function Products() {
         </div>}
       </section>
 
-      {dialogOpen && <ProductDialog product={editingProduct} saving={saving} onClose={() => { if (!saving) setDialogOpen(false); }} onSave={handleSave} />}
+      {dialogOpen && <ProductDialog product={editingProduct} saving={saving} catalogs={catalogs} onClose={() => { if (!saving) setDialogOpen(false); }} onSave={handleSave} />}
     </div>
   );
 }

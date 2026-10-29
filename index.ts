@@ -7,6 +7,7 @@ export function createApp(publicDirectory = path.resolve(process.cwd(), "public"
   const app = express();
   app.disable("x-powered-by");
   app.set("trust proxy", 1);
+  app.use("/api/admin/media", express.json({ limit: "1.4mb" }));
   app.use(express.json({ limit: "32kb" }));
   app.use((_req, res, next) => {
     res.setHeader("X-Content-Type-Options", "nosniff");
@@ -20,7 +21,7 @@ export function createApp(publicDirectory = path.resolve(process.cwd(), "public"
   registerAdminAuthRoutes(app);
   registerAdminProductRoutes(app);
 
-  app.get(["/", "/login", "/dashboard", "/products"], (_req, res) => {
+  app.get(["/", "/login", "/dashboard", "/products", "/catalogs"], (_req, res) => {
     res.setHeader("Cache-Control", "no-cache");
     res.sendFile(path.join(publicDirectory, "index.html"));
   });

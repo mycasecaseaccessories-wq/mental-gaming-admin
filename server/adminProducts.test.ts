@@ -153,6 +153,70 @@ describe("admin product API proxy", () => {
     expect(headers.get("x-mg-signature")).toBe(createHmac("sha256", serviceSecret).update(payload).digest("hex"));
   });
 
+  it("requires CSRF and signs catalog reads, catalog image updates, and image uploads", async () => {
+    const catalogId = "65a4b9c41e6b2f1e9c2d71a0";
+    const imageUrl = "https://store-api.example.test/api/store/media/65a4b9c41e6b2f1e9c2d71a0";
+    const patchBody = { imageUrl };
+    const uploadBody = { contentType: "image/webp", dataBase64: "UklGRg==" };
+
+    const noSession = await fetch(`${baseUrl}/api/admin/media`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(uploadBody),
+    });
+    expect(noSession.status).toBe(401);
+
+    const deniedPatch = await fetch(`${baseUrl}/api/admin/catalogs/${catalogId}`, {
+      method: "PATCH",
+      headers: { Cookie: sessionCookie, "Content-Type": "application/json" },
+      body: JSON.stringify(patchBody),
+    });
+    const deniedUpload = await fetch(`${baseUrl}/api/admin/media`, {
+      method: "POST",
+      headers: { Cookie: sessionCookie, "Content-Type": "application/json" },
+      body: JSON.stringify(uploadBody),
+    });
+    expect(deniedPatch.status).toBe(403);
+    expect(deniedUpload.status).toBe(403);
+    expect(upstreamCalls).toBe(0);
+
+    const csrfToken = await getCsrfToken();
+    const catalogRead = await fetch(`${baseUrl}/api/admin/catalogs`, {
+      headers: { Cookie: sessionCookie },
+    });
+    expect(catalogRead.status).toBe(200);
+    expect(lastUrl).toBe("https://store-api.example.test/api/store/admin-portal/catalogs");
+
+    const expectCurrentSignature = (method: string, path: string, bodyText: string) => {
+      const headers = new Headers(lastInit?.headers);
+      const timestamp = headers.get("x-mg-timestamp") ?? "";
+      const nonce = headers.get("x-mg-nonce") ?? "";
+      const bodyHash = createHash("sha256").update(bodyText).digest("hex");
+      const payload = ["v1", method, path, timestamp, nonce, "owner@example.com", bodyHash].join("\n");
+      expect(headers.get("x-mg-signature")).toBe(createHmac("sha256", serviceSecret).update(payload).digest("hex"));
+    };
+    expectCurrentSignature("GET", "/api/store/admin-portal/catalogs", "");
+
+    const catalogPatch = await fetch(`${baseUrl}/api/admin/catalogs/${catalogId}`, {
+      method: "PATCH",
+      headers: { Cookie: sessionCookie, "Content-Type": "application/json", "X-CSRF-Token": csrfToken },
+      body: JSON.stringify(patchBody),
+    });
+    expect(catalogPatch.status).toBe(200);
+    expect(lastUrl).toBe(`https://store-api.example.test/api/store/admin-portal/catalogs/${catalogId}`);
+    expectCurrentSignature("PATCH", `/api/store/admin-portal/catalogs/${catalogId}`, JSON.stringify(patchBody));
+
+    const imageUpload = await fetch(`${baseUrl}/api/admin/media`, {
+      method: "POST",
+      headers: { Cookie: sessionCookie, "Content-Type": "application/json", "X-CSRF-Token": csrfToken },
+      body: JSON.stringify(uploadBody),
+    });
+    expect(imageUpload.status).toBe(201);
+    expect(lastUrl).toBe("https://store-api.example.test/api/store/admin-portal/media");
+    expectCurrentSignature("POST", "/api/store/admin-portal/media", JSON.stringify(uploadBody));
+    expect(upstreamCalls).toBe(3);
+  });
+
   it("does not proxy paths outside the product API", async () => {
     const csrfToken = await getCsrfToken();
     const response = await fetch(`${baseUrl}/api/admin/products/../../users`, {

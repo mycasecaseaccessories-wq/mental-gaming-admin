@@ -8,6 +8,7 @@
   "rewrites": [
     { "source": "/login", "destination": "/index.html" },
     { "source": "/dashboard", "destination": "/index.html" },
-    { "source": "/products", "destination": "/index.html" }
+    { "source": "/products", "destination": "/index.html" },
+    { "source": "/catalogs", "destination": "/index.html" }
   ]
 }

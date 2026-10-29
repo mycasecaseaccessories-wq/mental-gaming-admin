@@ -17,6 +17,7 @@ export type AdminProduct = {
   imageUrl: string | null;
   description: string;
   sortOrder: number;
+  catalogId: string | null;
 };
 
 export type ProductInput = Omit<AdminProduct, "id">;
@@ -45,9 +46,10 @@ async function readResponse<T>(response: Response): Promise<T> {
   return payload as T;
 }
 
-export async function fetchProducts(search: string, page: number): Promise<ProductList> {
+export async function fetchProducts(search: string, page: number, catalogId?: string): Promise<ProductList> {
   const query = new URLSearchParams({ page: String(page) });
   if (search) query.set("search", search);
+  if (catalogId) query.set("catalogId", catalogId);
   const response = await fetch(`/api/admin/products?${query.toString()}`, {
     method: "GET",
     credentials: "include",
