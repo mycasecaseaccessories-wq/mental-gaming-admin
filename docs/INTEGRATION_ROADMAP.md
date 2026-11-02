@@ -22,10 +22,55 @@ Audit baseline: source archives supplied on 2026-11-01, plus GitHub repository m
 | Orders, users, wallet, transactions | Not integrated into Admin A UI | Not started |
 | Payment/top-up verification | Not integrated into Admin A UI | Not started |
 | Staff, roles, permissions, audit | Supabase private schema and role/permission seeds exist; no Admin UI/auth integration | Backend foundation only |
-| Store API | HMAC-protected admin-portal product/catalog/media endpoints; MongoDB-backed | Existing; extend carefully |
+| Store API | HMAC-protected admin-portal product/catalog/media endpoints; MongoDB-backed | Existing; replay protection hardened in PR #24 |
 | Telegram customer auth | Telegram Login Widget / WebApp init-data verification in customer storefront/API | Existing for customers; not yet Admin Login |
 | Legacy storefront admin | Admin routes/pages exist in Store monorepo and use Telegram auth + admin auth | Keep until Admin A parity is tested |
-| Deployment | Vercel team authorization has not been completed in this work session | Not verified |
+| Deployment | Store/API preview deployments reached READY; API preview emitted `skip-api-build`; API bundle was separately compiled in an isolated sandbox | Preview only; API runtime/build configuration still needs verification |
+
+## Phase 1 implementation snapshot — 2026-11-02
+
+### Admin-side Supabase foundation
+
+The separate Tokyo project `mental-gaming-admin` (`ikkleniqmhfvdlwvwnbe`) is active. Its `private` schema contains:
+
+- `staff_profiles`
+- `admin_roles`
+- `admin_permissions`
+- `role_permissions`
+- `user_roles`
+- `admin_activity_logs`
+- `system_settings`
+- `admin_notifications`
+- `admin_announcements`
+
+The roles `super_admin`, `admin`, `manager`, `staff` and `viewer` and the initial permission matrix are seeded. RLS is enabled on all nine tables; direct client roles have no schema/table access and the service role is the intended server-side access path.
+
+Supabase Auth has **not** been integrated into Admin A. Keep the existing Email + Password login; do not create users manually or replace the current login as part of Phase 1.
+
+### Store API security baseline
+
+Draft PR #24 consolidates the Phase 1 API security work:
+
+- MongoDB-backed atomic nonce claims replace the process-local HMAC replay Map.
+- Replays return HTTP 409; unavailable nonce storage fails closed with HTTP 503.
+- MongoDB connection initialization caches the in-flight promise.
+- Four API tests cover concurrent duplicate claims, unexpired replay rejection, expired nonce reuse and storage failure.
+- Production dependency audit now reports no known vulnerabilities.
+
+GitHub Actions run #127 passed frozen-lockfile install, formatting, TypeScript typecheck, bot tests, API security tests (4/4), full workspace build and production dependency audit. The VPS deployment job was skipped; no production deployment occurred.
+
+### Preview verification limits
+
+The Storefront and API preview deployments reached READY for the security branch. The API project's Vercel build emitted `skip-api-build`, so READY does not prove that Vercel compiled or executed the API bundle. The serverless bundle command was separately compiled successfully in an isolated sandbox. A safe API runtime smoke test and review of the API project's Vercel build/ignore configuration remain open.
+
+### Phase 1 exit items still open
+
+- Verify API Vercel build configuration and a non-production runtime smoke test.
+- Run MongoDB replay integration tests against an isolated test database across multiple API instances.
+- Verify HMAC secret equality across the Admin A, Storefront and API environments without exposing values.
+- Finish route-level contract mapping for Admin A read-only orders/users/wallet/transaction endpoints.
+- Review top-up approval and balance-adjustment atomicity/idempotency before exposing financial writes.
+- Keep all production data and MY CASE resources untouched.
 
 ## Phase 1 — System Integration Audit
 
