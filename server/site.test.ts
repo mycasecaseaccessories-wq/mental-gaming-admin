@@ -32,7 +32,7 @@ describe("admin website routes", () => {
     await rm(publicDirectory, { recursive: true, force: true });
   });
 
-  it.each(["/", "/login", "/dashboard"])("serves the admin application at %s", async (route) => {
+  it.each(["/", "/login", "/dashboard", "/products", "/catalogs", "/orders", "/customers", "/transactions", "/topups", "/staff"])("serves the admin application at %s", async (route) => {
     const response = await fetch(`${baseUrl}${route}`);
     const html = await response.text();
     expect(response.status).toBe(200);
