@@ -57,7 +57,7 @@ Draft PR #24 consolidates the Phase 1 API security work:
 - Four API tests cover concurrent duplicate claims, unexpired replay rejection, expired nonce reuse and storage failure.
 - Production dependency audit now reports no known vulnerabilities.
 
-GitHub Actions run #127 passed frozen-lockfile install, formatting, TypeScript typecheck, bot tests, API security tests (4/4), full workspace build and production dependency audit. The VPS deployment job was skipped; no production deployment occurred.
+GitHub Actions run #142 passed frozen-lockfile install, formatting, TypeScript typecheck, bot tests, API nonce unit tests (4/4), MongoDB cross-client integration tests (2/2), full workspace build, Vercel serverless bundle build, production-mode health smoke test and production dependency audit. The VPS deployment job was skipped; no production deployment occurred.
 
 ### Admin A preview isolation
 
@@ -67,7 +67,7 @@ No Vercel environment variable was changed. Before using Admin A Preview for pro
 
 ### Preview verification limits
 
-The Admin A preview deployment reached READY for the Admin roadmap branch. Storefront and API preview deployments also reached READY for the consolidated security branch. The API project's Vercel build emitted `skip-api-build`, so READY does not prove that Vercel compiled or executed the API bundle. The serverless bundle is now compiled by GitHub CI run #131 and passed. A safe API runtime smoke test and review of the API project's Vercel build/ignore configuration remain open.
+The Admin A preview deployment reached READY for the Admin roadmap branch. Storefront and API preview deployments also reached READY for the consolidated security branch. The API project's Vercel build emitted `skip-api-build`, so READY does not prove that Vercel compiled or executed the API bundle. The serverless bundle and production-mode `/api/healthz` smoke test now pass in GitHub CI run #142. A protected-preview runtime smoke test and review of the API project's Vercel build/ignore configuration remain open.
 
 ### Phase 1 status — source audit and security baseline complete
 
