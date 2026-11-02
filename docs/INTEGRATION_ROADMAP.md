@@ -63,7 +63,7 @@ GitHub Actions run #127 passed frozen-lockfile install, formatting, TypeScript t
 
 The Admin A product proxy previously had a hard-coded Storefront production origin. Draft PR #1 now adds `MG_PRODUCT_API_ORIGIN` and fails closed when the origin is not explicitly configured outside Vercel Production. Production retains the existing Storefront default; Preview and local development require an explicit API origin.
 
-No Vercel environment variable was changed. Before using Admin A Preview for product/catalog testing, set its Preview-only `MG_PRODUCT_API_ORIGIN` to the matching Store API preview branch alias and verify that the HMAC secret matches. Until then, the preview product proxy returns HTTP 503 instead of silently writing to production. The latest isolated Node 24 check passed frozen-lockfile install, TypeScript check, all 24 Vitest tests and the Vite production build.
+No Vercel environment variable was changed. Before using Admin A Preview for product/catalog testing, set its Preview-only `MG_PRODUCT_API_ORIGIN` to the matching Store API preview branch alias and verify that the HMAC secret matches. Until then, the preview product proxy returns HTTP 503 instead of silently writing to production. The latest isolated Node 24 check passed frozen-lockfile install, TypeScript check, all 25 Vitest tests and the Vite production build. The configured origin is accepted only as an HTTPS origin URL (no credentials, path, query or fragment).
 
 ### Preview verification limits
 
