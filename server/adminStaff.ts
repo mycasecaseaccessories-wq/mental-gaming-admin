@@ -101,6 +101,31 @@ export function registerAdminStaffRoutes(app: Express) {
     } catch (error) { sendError(res, error); }
   });
 
+  router.post("/roles/:roleKey", async (req, res) => {
+    const authorized = await authorize(req, res, "roles.manage");
+    if (!authorized) return;
+    if (!req.is("application/json") || !isAdminCsrfRequestValid(req)) {
+      res.status(403).json({ error: "လုံခြုံရေးအတည်ပြုမှု မအောင်မြင်ပါ။ စာမျက်နှာကို ပြန်ဖွင့်ပါ။" });
+      return;
+    }
+    const roleKey = req.params.roleKey;
+    const permissions = req.body?.permissions;
+    if (!["admin", "manager", "staff", "viewer"].includes(roleKey) ||
+        !Array.isArray(permissions) || permissions.length > 100 ||
+        permissions.some((permission: unknown) => typeof permission !== "string" || permission.length > 120)) {
+      res.status(400).json({ error: "Role သို့မဟုတ် Permission စာရင်းကို ပြန်စစ်ပါ။" });
+      return;
+    }
+    try {
+      const item = await rpc<unknown>("mg_admin_save_role_permissions", {
+        p_actor_email: authorized.email,
+        p_role_key: roleKey,
+        p_permissions: permissions,
+      });
+      res.status(200).json({ item });
+    } catch (error) { sendError(res, error); }
+  });
+
   router.get("/activity", async (req, res) => {
     if (!await authorize(req, res, "audit.view")) return;
     try {
