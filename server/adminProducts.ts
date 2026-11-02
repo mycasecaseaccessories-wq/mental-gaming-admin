@@ -6,7 +6,24 @@ const PRODUCTION_PRODUCT_API_ORIGIN = "https://mental-gaming-store.vercel.app";
 
 export function getProductApiOrigin(): string {
   const configured = process.env["MG_PRODUCT_API_ORIGIN"]?.trim();
-  if (configured) return configured;
+  if (configured) {
+    try {
+      const origin = new URL(configured);
+      if (
+        origin.protocol !== "https:" ||
+        origin.username ||
+        origin.password ||
+        origin.pathname !== "/" ||
+        origin.search ||
+        origin.hash
+      ) {
+        return "";
+      }
+      return origin.origin;
+    } catch {
+      return "";
+    }
+  }
   return process.env["VERCEL_ENV"] === "production" ? PRODUCTION_PRODUCT_API_ORIGIN : "";
 }
 const ADMIN_PREFIX = "/api/admin";
