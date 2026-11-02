@@ -72,6 +72,36 @@ describe("admin product API proxy", () => {
     expect(getProductApiOrigin()).toBe("");
   });
 
+  it("returns 503 instead of proxying preview product reads to production", async () => {
+    process.env.VERCEL_ENV = "preview";
+    delete process.env.MG_PRODUCT_API_ORIGIN;
+
+    const previewApp = express();
+    previewApp.use(express.json({ limit: "32kb" }));
+    registerAdminAuthRoutes(previewApp);
+    let previewUpstreamCalls = 0;
+    registerAdminProductRoutes(previewApp, {
+      fetcher: async () => {
+        previewUpstreamCalls += 1;
+        return new Response(JSON.stringify({ ok: true }), { status: 200 });
+      },
+    });
+    const previewServer = previewApp.listen(0, "127.0.0.1");
+    await new Promise<void>((resolve) => previewServer.once("listening", resolve));
+    const address = previewServer.address() as AddressInfo;
+    try {
+      const response = await fetch(`http://127.0.0.1:${address.port}/api/admin/products?page=1`, {
+        headers: { Cookie: sessionCookie },
+      });
+      expect(response.status).toBe(503);
+      expect(previewUpstreamCalls).toBe(0);
+    } finally {
+      await new Promise<void>((resolve, reject) =>
+        previewServer.close((error) => error ? reject(error) : resolve()),
+      );
+    }
+  });
+
   it("uses an explicitly configured preview Store API origin", () => {
     process.env.VERCEL_ENV = "preview";
     process.env.MG_PRODUCT_API_ORIGIN = "https://preview-store-api.example.test";
