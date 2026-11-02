@@ -27,6 +27,7 @@ export default function StaffAccess({ initialTab = "staff" }: { initialTab?: "st
   const [logs, setLogs] = useState<Audit[]>([]);
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [roleKey, setRoleKey] = useState("viewer");
   const [isActive, setIsActive] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -57,12 +58,12 @@ export default function StaffAccess({ initialTab = "staff" }: { initialTab?: "st
 
   function edit(item: Staff) {
     setEmail(item.email); setDisplayName(item.display_name ?? "");
-    setRoleKey(item.role_key); setIsActive(item.is_active);
+    setRoleKey(item.role_key); setIsActive(item.is_active); setNewPassword("");
     setEditing(true); setNotice(""); setError("");
   }
 
   function resetForm() {
-    setEmail(""); setDisplayName(""); setRoleKey("viewer");
+    setEmail(""); setDisplayName(""); setNewPassword(""); setRoleKey("viewer");
     setIsActive(true); setEditing(false);
   }
 
@@ -106,7 +107,16 @@ export default function StaffAccess({ initialTab = "staff" }: { initialTab?: "st
       });
       const body = await response.json().catch(() => ({})) as { error?: string };
       if (!response.ok) throw new Error(body.error || "Staff သိမ်းဆည်း၍ မရပါ။");
-      setNotice("Staff အချက်အလက်ကို သိမ်းဆည်းပြီးပါပြီ။");
+      if (newPassword) {
+        const passwordResponse = await fetch("/api/admin/access/staff/" + encodeURIComponent(email) + "/password", {
+          method: "POST", credentials: "include",
+          headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf.csrfToken, Accept: "application/json" },
+          body: JSON.stringify({ password: newPassword }),
+        });
+        const passwordBody = await passwordResponse.json().catch(() => ({})) as { error?: string };
+        if (!passwordResponse.ok) throw new Error(passwordBody.error || "Staff password သတ်မှတ်၍ မရပါ။");
+      }
+      setNotice(newPassword ? "Staff အကောင့်နှင့် Login Password ကို သိမ်းဆည်းပြီးပါပြီ။" : "Staff အချက်အလက်ကို သိမ်းဆည်းပြီးပါပြီ။");
       resetForm();
       await load();
     } catch (e) { setError(e instanceof Error ? e.message : "Staff သိမ်းဆည်း၍ မရပါ။"); }
@@ -134,10 +144,11 @@ export default function StaffAccess({ initialTab = "staff" }: { initialTab?: "st
       </section>
       <form onSubmit={save} className={panel+" h-fit p-4"}>
         <h3 className="text-sm font-semibold text-white">{editing?"Staff ပြင်ဆင်ရန်":"Staff အသစ်ထည့်ရန်"}</h3>
-        <p className="mt-1 text-xs leading-5 text-slate-500">Email နှင့် Role ကို သတ်မှတ်ပါ။ Password မဖန်တီးပါ။</p>
+        <p className="mt-1 text-xs leading-5 text-slate-500">Email နှင့် Role ကို သတ်မှတ်ပါ။ Password ကို scrypt hash အဖြစ်သာ သိမ်းဆည်းသည်။</p>
         <label className="mt-4 block text-xs text-slate-400">Email<input required type="email" maxLength={320} value={email} onChange={e=>setEmail(e.target.value)} className={field+" mt-2"} placeholder="staff@example.com" /></label>
         <label className="mt-3 block text-xs text-slate-400">Display name<input maxLength={100} value={displayName} onChange={e=>setDisplayName(e.target.value)} className={field+" mt-2"} placeholder="Staff name" /></label>
-        <label className="mt-3 block text-xs text-slate-400">Role<select value={roleKey} onChange={e=>setRoleKey(e.target.value)} className={field+" mt-2"}>{["super_admin","admin","manager","staff","viewer"].map(v=><option key={v} value={v}>{v}</option>)}</select></label>
+        <label className="mt-3 block text-xs text-slate-400">{editing?"Password အသစ် (မပြောင်းလိုပါက ချန်ထားပါ)":"Login Password"}<input type="password" autoComplete="new-password" minLength={12} maxLength={128} value={newPassword} onChange={e=>setNewPassword(e.target.value)} className={field+" mt-2"} placeholder="အနည်းဆုံး ၁၂ လုံး" /></label>
+        <label className="mt-3 block text-xs text-slate-400">Role<select value={roleKey} onChange={e=>setRoleKey(e.target.value)} className={field+" mt-2"}>{["admin","manager","staff","viewer"].map(v=><option key={v} value={v}>{v}</option>)}</select></label>
         <label className="mt-4 flex items-center gap-2 text-xs text-slate-300"><input type="checkbox" checked={isActive} onChange={e=>setIsActive(e.target.checked)} className="accent-cyan-300"/> Account enabled</label>
         <div className="mt-5 flex gap-2"><button type="submit" disabled={saving} className={button}><Save size={14}/>{saving?"သိမ်းနေသည်…":"သိမ်းဆည်းရန်"}</button>{editing&&<button type="button" onClick={resetForm} className="h-10 rounded-lg border border-white/10 px-3 text-xs text-slate-300">Cancel</button>}</div>
       </form>
@@ -154,6 +165,6 @@ export default function StaffAccess({ initialTab = "staff" }: { initialTab?: "st
       <div className="border-b border-white/[0.07] px-4 py-4"><h3 className="text-sm font-semibold text-white">Admin Activity Logs</h3><p className="mt-1 text-xs text-slate-500">Admin access control ဆိုင်ရာ လုပ်ဆောင်မှုမှတ်တမ်းများ။</p></div>
       {loading?<p className="p-8 text-center text-sm text-slate-500">ဖတ်ရှုနေသည်…</p>:logs.length===0?<p className="p-8 text-center text-sm text-slate-500">မှတ်တမ်း မရှိသေးပါ။</p>:<div className="overflow-x-auto"><table className="w-full min-w-[700px] text-left text-xs"><thead className="border-b border-white/[0.06] text-[10px] uppercase text-slate-500"><tr><th className="px-4 py-3">Time</th><th className="px-4 py-3">Admin</th><th className="px-4 py-3">Action</th><th className="px-4 py-3">Resource</th><th className="px-4 py-3">Details</th></tr></thead><tbody className="divide-y divide-white/[0.05]">{logs.map(l=><tr key={l.id} className="text-slate-300"><td className="px-4 py-3 text-slate-500">{new Date(l.created_at).toLocaleString("en-GB")}</td><td className="px-4 py-3">{l.actor_email}</td><td className="px-4 py-3">{l.action}</td><td className="px-4 py-3">{l.resource_type||"—"} {l.resource_id||""}</td><td className="px-4 py-3 text-slate-500">{JSON.stringify(l.metadata)}</td></tr>)}</tbody></table></div>}
     </section>}
-    <p className="mt-4 text-[11px] leading-5 text-slate-600">သတိပြုရန် — လက်ရှိ Admin A login သည် single-account Email/Password ဖြစ်နေသေးသည်။ Staff account များကို မှတ်ပုံတင်ထားသော်လည်း သီးခြား login ဖွင့်မထားသေးပါ။ Telegram login သို့မဟုတ် staff password မဖန်တီးထားပါ။</p>
+    <p className="mt-4 text-[11px] leading-5 text-slate-600">သတိပြုရန် — Staff များသည် သတ်မှတ်ထားသော Email နှင့် Password ဖြင့် ဝင်နိုင်သည်။ Permission ပြောင်းလဲခြင်း သို့မဟုတ် Account ပိတ်ခြင်းဖြင့် နောက်တစ်ကြိမ် request မှစ၍ ခွင့်ပြုချက်ကို ပြန်စစ်ဆေးမည်။</p>
   </div>;
 }
