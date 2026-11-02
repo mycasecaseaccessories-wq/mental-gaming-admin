@@ -27,8 +27,12 @@ import type { LucideIcon } from "lucide-react";
 import type { AdminUser } from "@/lib/adminAuth";
 import Products from "@/pages/Products";
 import Catalogs from "@/pages/Catalogs";
+import Orders from "@/pages/Orders";
+import Customers from "@/pages/Customers";
+import Transactions from "@/pages/Transactions";
+import Topups from "@/pages/Topups";
 
-function isDashboardRoute(path: string): boolean { return path !== "/products" && path !== "/catalogs"; }
+function isDashboardRoute(path: string): boolean { return !["/products", "/catalogs", "/orders", "/customers", "/transactions", "/topups"].includes(path); }
 
 type HomeProps = {
   user: AdminUser;
@@ -47,8 +51,8 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     label: "အထွေထွေ",
     items: [
       { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, available: true },
-      { label: "Orders", icon: ClipboardList, available: false },
-      { label: "Customers", icon: Users, available: false },
+      { label: "Orders", href: "/orders", icon: ClipboardList, available: true },
+      { label: "Customers", href: "/customers", icon: Users, available: true },
     ],
   },
   {
@@ -57,8 +61,8 @@ const navGroups: { label: string; items: NavItem[] }[] = [
       { label: "Products", href: "/products", icon: Package, available: true },
       { label: "Catalogs & Images", href: "/catalogs", icon: Layers, available: true },
       { label: "Wallet", icon: Wallet, available: false },
-      { label: "Transactions", icon: CircleDollarSign, available: false },
-      { label: "Top-up Reviews", icon: CreditCard, available: false },
+      { label: "Transactions", href: "/transactions", icon: CircleDollarSign, available: true },
+      { label: "Top-up Reviews", href: "/topups", icon: CreditCard, available: true },
     ],
   },
   {
@@ -166,8 +170,12 @@ export default function Home({ user, onLogout }: HomeProps) {
 
   const isProductsPage = location === "/products";
   const isCatalogsPage = location === "/catalogs";
-  const isDashboardPage = !isProductsPage && !isCatalogsPage;
-  const pageTitle = isProductsPage ? "Products" : isCatalogsPage ? "Catalogs & Images" : "Dashboard";
+  const isOrdersPage = location === "/orders";
+  const isCustomersPage = location === "/customers";
+  const isTransactionsPage = location === "/transactions";
+  const isTopupsPage = location === "/topups";
+  const isDashboardPage = isDashboardRoute(location);
+  const pageTitle = isProductsPage ? "Products" : isCatalogsPage ? "Catalogs & Images" : isOrdersPage ? "Orders" : isCustomersPage ? "Customers" : isTransactionsPage ? "Transactions" : isTopupsPage ? "Pending Top-ups" : "Dashboard";
 
   async function handleLogout() {
     if (loggingOut) return;
@@ -296,6 +304,14 @@ export default function Home({ user, onLogout }: HomeProps) {
             <Products />
           ) : isCatalogsPage ? (
             <Catalogs />
+          ) : isOrdersPage ? (
+            <Orders />
+          ) : isCustomersPage ? (
+            <Customers />
+          ) : isTransactionsPage ? (
+            <Transactions />
+          ) : isTopupsPage ? (
+            <Topups />
           ) : (
             <>
               <section className="mb-7 flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
