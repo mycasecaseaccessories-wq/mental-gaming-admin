@@ -69,16 +69,29 @@ No Vercel environment variable was changed. Before using Admin A Preview for pro
 
 The Admin A preview deployment reached READY for the Admin roadmap branch. Storefront and API preview deployments also reached READY for the consolidated security branch. The API project's Vercel build emitted `skip-api-build`, so READY does not prove that Vercel compiled or executed the API bundle. The serverless bundle is now compiled by GitHub CI run #131 and passed. A safe API runtime smoke test and review of the API project's Vercel build/ignore configuration remain open.
 
-### Phase 1 exit items still open
+### Phase 1 status — source audit and security baseline complete
 
-- Verify API Vercel build configuration and a non-production runtime smoke test.
-- Run MongoDB replay integration tests against an isolated test database across multiple API instances.
-- Set the Admin A Preview-only `MG_PRODUCT_API_ORIGIN` to the matching Store API preview alias, then verify HMAC secret equality across the Preview environments without exposing values.
-- Finish route-level contract mapping for Admin A read-only orders/users/wallet/transaction endpoints.
-- Review top-up approval and balance-adjustment atomicity/idempotency before exposing financial writes.
-- Keep all production data and MY CASE resources untouched.
+<badge label="Complete" color="success" />
 
-## Phase 1 — System Integration Audit
+The source-level integration audit and code-level security baseline are complete in draft PRs #1, #22 and #24.
+
+- [x] Map Admin A proxies to Store API HMAC portal routes and document the current feature-parity matrix.
+- [x] Document MongoDB business-data ownership and the no-dual-write boundary with the separate Supabase admin project.
+- [x] Trace Telegram customer login and legacy Telegram admin authentication at source level.
+- [x] Review Admin A session/CSRF, HMAC signing, replay protection, rate limits, CORS and secret handling.
+- [x] Replace the process-local HMAC nonce Map with atomic MongoDB-backed claims; unit and cross-client MongoDB integration tests pass in CI run #142.
+- [x] Clear the production dependency audit; run #142 reports no known vulnerabilities.
+- [x] Add Admin A Preview isolation: Preview/local require an explicit HTTPS Store API origin and fail closed with HTTP 503 otherwise.
+- [x] Map legacy financial write-path risks and document the transaction/idempotency requirements; no financial write behavior was changed.
+
+### Environment-level gates before production (Phase 5)
+
+- [ ] Review the API Vercel project's `skip-api-build` configuration and verify a protected-preview runtime smoke test. The serverless bundle and production-mode `/api/healthz` smoke test pass in CI run #142, but that does not prove the Vercel API project executes the bundle.
+- [ ] Configure the Admin A Preview-only `MG_PRODUCT_API_ORIGIN` to the matching Store API preview alias and verify HMAC secret equality without exposing values. No Vercel environment variables have been changed; Preview currently fails closed.
+- [ ] Run order/payment/top-up/wallet/notification flows against isolated test data. No production customer, wallet, order or transaction data has been used.
+- [ ] Preserve MY CASE project and production data; no production deployment or financial-data migration is authorized by these draft PRs.
+
+## Phase 1 — System Integration Audit (source/CI baseline complete)
 
 ### Required work
 1. Map Admin A `/api/admin/*` proxies to Store API `/api/store/admin-portal/*` routes.
@@ -88,8 +101,8 @@ The Admin A preview deployment reached READY for the Admin roadmap branch. Store
 5. Trace order creation, payment submission, manual verification, wallet credit and notifications end-to-end.
 6. Add contract/integration tests before changing financial workflows.
 
-### Known security follow-up
-The supplied API source uses an in-memory nonce Map for HMAC replay prevention. In serverless/multi-instance deployments, this is not shared durable replay protection. Replace it with a bounded shared store or another design that provides cross-instance replay protection before expanding privileged write endpoints. Do not change production behavior without tests and rollout planning.
+### Completed security follow-up
+The in-memory nonce Map has been replaced in draft PR #24 by atomic MongoDB-backed nonce claims with expired-record replacement and fail-closed behavior. Four unit tests and two isolated MongoDB cross-client integration tests pass in CI run #142. Production dependency audit is clean. Admin A Preview no longer falls back to the production Store API origin when `VERCEL_ENV` is not production.
 
 ## Phase 2 — Admin UI/UX and back-office modules
 
