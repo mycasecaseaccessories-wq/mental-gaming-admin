@@ -1,5 +1,6 @@
 import { Router, type Express, type Request, type Response } from "express";
-import { getAdminSessionForRequest, isAdminCsrfRequestValid } from "./adminAuth.js";
+import { getAdminSessionForRequest, isAdminCsrfRequestValid, hashStaffPassword } from "./adminAuth.js";
+import { adminSupabaseRpc as rpc, getAdminSupabaseConfig } from "./adminSupabase.js";
 
 type AdminAccess = {
   email: string;
@@ -10,39 +11,27 @@ type AdminAccess = {
   permissions: string[];
 };
 
-function getSupabaseConfig(): { url: string; key: string } | null {
-  const rawUrl = process.env.MG_ADMIN_SUPABASE_URL?.trim() ?? "";
-  const key = process.env.MG_ADMIN_SUPABASE_SERVICE_ROLE_KEY ?? "";
-  if (!rawUrl || Buffer.byteLength(key, "utf8") < 32) return null;
-  try {
-    const parsed = new URL(rawUrl);
-    if (parsed.protocol !== "https:" || parsed.username || parsed.password || parsed.pathname !== "/" || parsed.search || parsed.hash) return null;
-    return { url: parsed.origin, key };
-  } catch {
-    return null;
+export async function getAdminAccessForRequest(req: Request): Promise<AdminAccess | null> {
+  const session = await getAdminSessionForRequest(req);
+  if (!session) return null;
+  if (session.role === "admin") {
+    if (!getAdminSupabaseConfig()) {
+      return {
+        email: session.email, display_name: null, is_active: true,
+        access_state: "active", role_key: "super_admin",
+        permissions: [
+          "dashboard.view","orders.view","customers.view","products.view","products.manage",
+          "catalogs.view","catalogs.manage","wallet.view","transactions.view","topups.view",
+          "analytics.view","settings.view","staff.manage","roles.manage","audit.view",
+          "notifications.manage","announcements.manage",
+        ],
+      };
+    }
+    return await rpc<AdminAccess>("mg_admin_bootstrap_super_admin", {
+      p_email: session.email, p_display_name: null,
+    });
   }
-}
-
-async function rpc<T>(name: string, args: Record<string, unknown> = {}): Promise<T> {
-  const config = getSupabaseConfig();
-  if (!config) throw new Error("ADMIN_SUPABASE_NOT_CONFIGURED");
-  const response = await fetch(`${config.url}/rest/v1/rpc/${name}`, {
-    method: "POST",
-    headers: {
-      apikey: config.key,
-      Authorization: `Bearer ${config.key}`,
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify(args),
-    cache: "no-store",
-    signal: AbortSignal.timeout(10_000),
-  });
-  if (!response.ok) {
-    if (response.status === 401 || response.status === 403) throw new Error("ADMIN_SUPABASE_FORBIDDEN");
-    throw new Error("ADMIN_SUPABASE_REQUEST_FAILED");
-  }
-  return await response.json() as T;
+  return await rpc<AdminAccess>("mg_admin_get_staff_access", { p_email: session.email });
 }
 
 async function authorize(req: Request, res: Response, permission: string): Promise<{ email: string; access: AdminAccess } | null> {
@@ -52,11 +41,8 @@ async function authorize(req: Request, res: Response, permission: string): Promi
     return null;
   }
   try {
-    const access = await rpc<AdminAccess>("mg_admin_bootstrap_super_admin", {
-      p_email: session.email,
-      p_display_name: null,
-    });
-    if (!access.email || !access.is_active || access.access_state !== "active" || !access.permissions?.includes(permission)) {
+    const access = await getAdminAccessForRequest(req);
+    if (!access || !access.is_active || access.access_state !== "active" || !access.permissions?.includes(permission)) {
       res.status(403).json({ error: "ဤလုပ်ဆောင်ချက်အတွက် ခွင့်ပြုချက် မရှိပါ။" });
       return null;
     }
@@ -136,6 +122,31 @@ export function registerAdminStaffRoutes(app: Express) {
       const limit = Math.max(1, Math.min(250, Number(req.query.limit) || 100));
       res.setHeader("Cache-Control", "no-store");
       res.json({ items: await rpc<unknown[]>("mg_admin_list_activity", { p_limit: limit, p_actor_email: null }) });
+    } catch (error) { sendError(res, error); }
+  });
+
+  router.post("/staff/:email/password", async (req, res) => {
+    const authorized = await authorize(req, res, "staff.manage");
+    if (!authorized) return;
+    if (!req.is("application/json") || !isAdminCsrfRequestValid(req)) {
+      res.status(403).json({ error: "လုံခြုံရေးအတည်ပြုမှု မအောင်မြင်ပါ။" });
+      return;
+    }
+    const staffEmail = decodeURIComponent(req.params.email).trim().toLowerCase();
+    const password = typeof req.body?.password === "string" ? req.body.password : "";
+    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(staffEmail) || password.length < 12 || password.length > 128) {
+      res.status(400).json({ error: "Staff Email မှန်ကန်ရန်နှင့် Password အနည်းဆုံး ၁၂ လုံးရှိရန် လိုအပ်ပါသည်။" });
+      return;
+    }
+    try {
+      const material = await hashStaffPassword(password);
+      const result = await rpc<unknown>("mg_admin_set_staff_password", {
+        p_actor_email: authorized.email,
+        p_staff_email: staffEmail,
+        p_password_hash: material.hash,
+        p_password_salt: material.salt,
+      });
+      res.status(200).json({ item: result });
     } catch (error) { sendError(res, error); }
   });
 
