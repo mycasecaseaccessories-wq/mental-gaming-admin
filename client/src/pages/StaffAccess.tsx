@@ -1,0 +1,128 @@
+import { useEffect, useState } from "react";
+import { Activity, AlertCircle, CheckCircle2, RefreshCw, Save, ShieldCheck, Users } from "lucide-react";
+
+type Staff = { email: string; display_name: string | null; is_active: boolean; access_state: string; created_at: string; role_key: string; role_name: string };
+type Role = { role_key: string; display_name: string; description: string | null; is_system: boolean; permissions: string[] };
+type Permission = { permission_key: string; description: string | null };
+type Audit = { id: number; actor_email: string; action: string; resource_type: string | null; resource_id: string | null; metadata: Record<string, unknown>; ip_address: string | null; user_agent: string | null; created_at: string };
+
+async function readJson<T>(path: string): Promise<T> {
+  const response = await fetch(path, { credentials: "include", headers: { Accept: "application/json" }, cache: "no-store" });
+  const body = await response.json().catch(() => ({})) as { error?: string } & T;
+  if (!response.ok) throw new Error(body.error || "အချက်အလက် ဖတ်ရှု၍ မရပါ။");
+  return body;
+}
+
+const panel = "rounded-2xl border border-white/[0.07] bg-[#101827]/75";
+const field = "h-10 w-full rounded-lg border border-white/10 bg-[#0b111d] px-3 text-sm text-slate-200 outline-none focus:border-cyan-200/40";
+const button = "inline-flex h-10 items-center gap-2 rounded-lg bg-cyan-200 px-4 text-xs font-semibold text-slate-950 disabled:opacity-50";
+
+export default function StaffAccess() {
+  const [tab, setTab] = useState<"staff" | "roles" | "activity">("staff");
+  const [staff, setStaff] = useState<Staff[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [permissions, setPermissions] = useState<Permission[]>([]);
+  const [logs, setLogs] = useState<Audit[]>([]);
+  const [email, setEmail] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [roleKey, setRoleKey] = useState("viewer");
+  const [isActive, setIsActive] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+
+  async function load() {
+    setLoading(true); setError(""); setNotice("");
+    try {
+      if (tab === "staff") {
+        const data = await readJson<{ items: Staff[] }>("/api/admin/access/staff");
+        setStaff(data.items);
+      } else if (tab === "roles") {
+        const data = await readJson<{ roles: Role[]; permissions: Permission[] }>("/api/admin/access/roles");
+        setRoles(data.roles); setPermissions(data.permissions);
+      } else {
+        const data = await readJson<{ items: Audit[] }>("/api/admin/access/activity?limit=150");
+        setLogs(data.items);
+      }
+    } catch (e) { setError(e instanceof Error ? e.message : "Admin data ဖတ်ရှု၍ မရပါ။"); }
+    finally { setLoading(false); }
+  }
+
+  useEffect(() => { void load(); }, [tab]);
+
+  function edit(item: Staff) {
+    setEmail(item.email); setDisplayName(item.display_name ?? "");
+    setRoleKey(item.role_key); setIsActive(item.is_active);
+    setEditing(true); setNotice(""); setError("");
+  }
+
+  function resetForm() {
+    setEmail(""); setDisplayName(""); setRoleKey("viewer");
+    setIsActive(true); setEditing(false);
+  }
+
+  async function save(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault(); setSaving(true); setError(""); setNotice("");
+    try {
+      const csrfResponse = await fetch("/api/admin-auth/csrf", { credentials: "include", cache: "no-store" });
+      const csrf = await csrfResponse.json() as { csrfToken?: string; error?: string };
+      if (!csrfResponse.ok || !csrf.csrfToken) throw new Error(csrf.error || "Security token မရရှိပါ။");
+      const response = await fetch("/api/admin/access/staff", {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf.csrfToken, Accept: "application/json" },
+        body: JSON.stringify({ email, displayName, roleKey, isActive }),
+      });
+      const body = await response.json().catch(() => ({})) as { error?: string };
+      if (!response.ok) throw new Error(body.error || "Staff သိမ်းဆည်း၍ မရပါ။");
+      setNotice("Staff အချက်အလက်ကို သိမ်းဆည်းပြီးပါပြီ။");
+      resetForm();
+      await load();
+    } catch (e) { setError(e instanceof Error ? e.message : "Staff သိမ်းဆည်း၍ မရပါ။"); }
+    finally { setSaving(false); }
+  }
+
+  return <div>
+    <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+      <div><p className="text-xs font-semibold uppercase tracking-wider text-cyan-200/80">Security · Admin Supabase</p><h2 className="mt-2 text-2xl font-semibold text-white">Staff & Access Control</h2><p className="mt-2 text-sm text-slate-400">ဝန်ထမ်းစာရင်း၊ Role Permission နှင့် Admin လုပ်ဆောင်မှုမှတ်တမ်းများ။</p></div>
+      <button type="button" onClick={() => void load()} disabled={loading} className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/10 px-4 text-sm text-slate-200 disabled:opacity-50"><RefreshCw size={15} className={loading ? "animate-spin" : ""}/> Refresh</button>
+    </div>
+    <div className="mb-4 flex flex-wrap gap-2">
+      {([{id:"staff",label:"Staff",icon:Users},{id:"roles",label:"Roles & Permissions",icon:ShieldCheck},{id:"activity",label:"Activity Logs",icon:Activity}] as const).map(item => {
+        const Icon=item.icon;
+        return <button key={item.id} type="button" onClick={()=>setTab(item.id)} className={`inline-flex h-10 items-center gap-2 rounded-lg border px-3 text-xs ${tab===item.id?"border-cyan-200/20 bg-cyan-200/10 text-cyan-100":"border-white/10 text-slate-400 hover:text-white"}`}><Icon size={15}/>{item.label}</button>;
+      })}
+    </div>
+    {error && <p role="alert" className="mb-4 flex gap-2 rounded-xl border border-rose-300/20 bg-rose-300/[0.07] p-3 text-sm text-rose-200"><AlertCircle size={16}/>{error}</p>}
+    {notice && <p role="status" className="mb-4 flex gap-2 rounded-xl border border-lime-300/20 bg-lime-300/[0.06] p-3 text-sm text-lime-100"><CheckCircle2 size={16}/>{notice}</p>}
+
+    {tab==="staff" && <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <section className={panel+" overflow-hidden"}>
+        <div className="border-b border-white/[0.07] px-4 py-4"><h3 className="text-sm font-semibold text-white">Staff Accounts</h3><p className="mt-1 text-xs text-slate-500">{staff.length} records · Admin Supabase</p></div>
+        {loading?<p className="p-8 text-center text-sm text-slate-500">ဖတ်ရှုနေသည်…</p>:staff.length===0?<p className="p-8 text-center text-sm text-slate-500">Staff စာရင်း မရှိသေးပါ။</p>:<div className="overflow-x-auto"><table className="w-full min-w-[600px] text-left text-xs"><thead className="border-b border-white/[0.06] text-[10px] uppercase text-slate-500"><tr><th className="px-4 py-3">Account</th><th className="px-4 py-3">Role</th><th className="px-4 py-3">Login</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Action</th></tr></thead><tbody className="divide-y divide-white/[0.05]">{staff.map(s=><tr key={s.email} className="text-slate-300"><td className="px-4 py-3"><p>{s.display_name||"—"}</p><p className="mt-1 break-all text-[10px] text-slate-500">{s.email}</p></td><td className="px-4 py-3">{s.role_name}</td><td className="px-4 py-3 text-amber-200">{s.access_state==="pending_auth"?"Pending login setup":s.access_state}</td><td className="px-4 py-3">{s.is_active?"Enabled":"Disabled"}</td><td className="px-4 py-3"><button type="button" onClick={()=>edit(s)} className="text-cyan-200 underline underline-offset-2">Edit</button></td></tr>)}</tbody></table></div>}
+      </section>
+      <form onSubmit={save} className={panel+" h-fit p-4"}>
+        <h3 className="text-sm font-semibold text-white">{editing?"Staff ပြင်ဆင်ရန်":"Staff အသစ်ထည့်ရန်"}</h3>
+        <p className="mt-1 text-xs leading-5 text-slate-500">Email နှင့် Role ကို သတ်မှတ်ပါ။ Password မဖန်တီးပါ။</p>
+        <label className="mt-4 block text-xs text-slate-400">Email<input required type="email" maxLength={320} value={email} onChange={e=>setEmail(e.target.value)} className={field+" mt-2"} placeholder="staff@example.com" /></label>
+        <label className="mt-3 block text-xs text-slate-400">Display name<input maxLength={100} value={displayName} onChange={e=>setDisplayName(e.target.value)} className={field+" mt-2"} placeholder="Staff name" /></label>
+        <label className="mt-3 block text-xs text-slate-400">Role<select value={roleKey} onChange={e=>setRoleKey(e.target.value)} className={field+" mt-2"}>{["super_admin","admin","manager","staff","viewer"].map(v=><option key={v} value={v}>{v}</option>)}</select></label>
+        <label className="mt-4 flex items-center gap-2 text-xs text-slate-300"><input type="checkbox" checked={isActive} onChange={e=>setIsActive(e.target.checked)} className="accent-cyan-300"/> Account enabled</label>
+        <div className="mt-5 flex gap-2"><button type="submit" disabled={saving} className={button}><Save size={14}/>{saving?"သိမ်းနေသည်…":"သိမ်းဆည်းရန်"}</button>{editing&&<button type="button" onClick={resetForm} className="h-10 rounded-lg border border-white/10 px-3 text-xs text-slate-300">Cancel</button>}</div>
+      </form>
+    </div>}
+
+    {tab==="roles" && <section className={panel+" overflow-hidden"}>
+      <div className="border-b border-white/[0.07] px-4 py-4"><h3 className="text-sm font-semibold text-white">Role Permission Matrix</h3><p className="mt-1 text-xs text-slate-500">လက်ရှိ သတ်မှတ်ထားသော Permission များကို ဖတ်ရှုရန်။</p></div>
+      {loading?<p className="p-8 text-center text-sm text-slate-500">ဖတ်ရှုနေသည်…</p>:<div className="overflow-x-auto"><table className="w-full min-w-[720px] text-left text-xs"><thead className="border-b border-white/[0.06] text-[10px] uppercase text-slate-500"><tr><th className="px-4 py-3">Role</th><th className="px-4 py-3">Permission</th><th className="px-4 py-3">Description</th></tr></thead><tbody className="divide-y divide-white/[0.05]">{roles.map(r=><tr key={r.role_key} className="align-top text-slate-300"><td className="px-4 py-3"><p className="font-semibold">{r.display_name}</p><p className="mt-1 text-[10px] text-slate-500">{r.role_key}</p></td><td className="px-4 py-3"><div className="flex max-w-[460px] flex-wrap gap-1.5">{r.permissions.map(p=><span key={p} className="rounded-md border border-cyan-200/10 bg-cyan-200/[0.04] px-2 py-1 text-[10px] text-cyan-100">{p}</span>)}</div></td><td className="px-4 py-3 text-slate-500">{r.description||"System role"}</td></tr>)}</tbody></table></div>}
+      <div className="border-t border-white/[0.06] px-4 py-3 text-xs text-slate-500">Permission catalog: {permissions.length} · Permission editing ကို သီးခြားစစ်ဆေးပြီးမှ ဖွင့်ပါမည်။</div>
+    </section>}
+
+    {tab==="activity" && <section className={panel+" overflow-hidden"}>
+      <div className="border-b border-white/[0.07] px-4 py-4"><h3 className="text-sm font-semibold text-white">Admin Activity Logs</h3><p className="mt-1 text-xs text-slate-500">Admin access control ဆိုင်ရာ လုပ်ဆောင်မှုမှတ်တမ်းများ။</p></div>
+      {loading?<p className="p-8 text-center text-sm text-slate-500">ဖတ်ရှုနေသည်…</p>:logs.length===0?<p className="p-8 text-center text-sm text-slate-500">မှတ်တမ်း မရှိသေးပါ။</p>:<div className="overflow-x-auto"><table className="w-full min-w-[700px] text-left text-xs"><thead className="border-b border-white/[0.06] text-[10px] uppercase text-slate-500"><tr><th className="px-4 py-3">Time</th><th className="px-4 py-3">Admin</th><th className="px-4 py-3">Action</th><th className="px-4 py-3">Resource</th><th className="px-4 py-3">Details</th></tr></thead><tbody className="divide-y divide-white/[0.05]">{logs.map(l=><tr key={l.id} className="text-slate-300"><td className="px-4 py-3 text-slate-500">{new Date(l.created_at).toLocaleString("en-GB")}</td><td className="px-4 py-3">{l.actor_email}</td><td className="px-4 py-3">{l.action}</td><td className="px-4 py-3">{l.resource_type||"—"} {l.resource_id||""}</td><td className="px-4 py-3 text-slate-500">{JSON.stringify(l.metadata)}</td></tr>)}</tbody></table></div>}
+    </section>}
+    <p className="mt-4 text-[11px] leading-5 text-slate-600">သတိပြုရန် — လက်ရှိ Admin A login သည် single-account Email/Password ဖြစ်နေသေးသည်။ Staff account များကို မှတ်ပုံတင်ထားသော်လည်း သီးခြား login ဖွင့်မထားသေးပါ။ Telegram login သို့မဟုတ် staff password မဖန်တီးထားပါ။</p>
+  </div>;
+}
