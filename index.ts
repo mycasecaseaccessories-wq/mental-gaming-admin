@@ -23,7 +23,7 @@ export function createApp(publicDirectory = path.resolve(process.cwd(), "public"
   registerAdminProductRoutes(app);
   registerAdminStaffRoutes(app);
 
-  app.get(["/", "/login", "/dashboard", "/products", "/catalogs", "/staff"], (_req, res) => {
+  app.get(["/", "/login", "/dashboard", "/products", "/catalogs", "/orders", "/customers", "/transactions", "/topups", "/staff"], (_req, res) => {
     res.setHeader("Cache-Control", "no-cache");
     res.sendFile(path.join(publicDirectory, "index.html"));
   });
