@@ -21,7 +21,7 @@ export function createApp(publicDirectory = path.resolve(process.cwd(), "public"
   registerAdminAuthRoutes(app);
   registerAdminProductRoutes(app);
 
-  app.get(["/", "/login", "/dashboard", "/products", "/catalogs"], (_req, res) => {
+  app.get(["/", "/login", "/dashboard", "/products", "/catalogs", "/staff"], (_req, res) => {
     res.setHeader("Cache-Control", "no-cache");
     res.sendFile(path.join(publicDirectory, "index.html"));
   });
