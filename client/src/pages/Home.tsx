@@ -33,7 +33,7 @@ import Transactions from "@/pages/Transactions";
 import Topups from "@/pages/Topups";
 import StaffAccess from "@/pages/StaffAccess";
 
-function isDashboardRoute(path: string): boolean { return !["/products", "/catalogs", "/orders", "/customers", "/transactions", "/topups", "/staff"].includes(path); }
+function isDashboardRoute(path: string): boolean { return !["/products", "/catalogs", "/orders", "/customers", "/transactions", "/topups", "/staff", "/activity"].includes(path); }
 
 type HomeProps = {
   user: AdminUser;
@@ -71,7 +71,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     items: [
       { label: "Analytics", icon: ChartNoAxesCombined, available: false },
       { label: "Staff & Roles", href: "/staff", icon: ShieldCheck, available: true },
-      { label: "Activity Logs", href: "/staff", icon: Activity, available: true },
+      { label: "Activity Logs", href: "/activity", icon: Activity, available: true },
       { label: "Settings", icon: Settings2, available: false },
     ],
   },
@@ -176,8 +176,9 @@ export default function Home({ user, onLogout }: HomeProps) {
   const isTransactionsPage = location === "/transactions";
   const isTopupsPage = location === "/topups";
   const isStaffPage = location === "/staff";
+  const isActivityPage = location === "/activity";
   const isDashboardPage = isDashboardRoute(location);
-  const pageTitle = isProductsPage ? "Products" : isCatalogsPage ? "Catalogs & Images" : isOrdersPage ? "Orders" : isCustomersPage ? "Customers" : isTransactionsPage ? "Transactions" : isTopupsPage ? "Pending Top-ups" : isStaffPage ? "Staff & Roles" : "Dashboard";
+  const pageTitle = isProductsPage ? "Products" : isCatalogsPage ? "Catalogs & Images" : isOrdersPage ? "Orders" : isCustomersPage ? "Customers" : isTransactionsPage ? "Transactions" : isTopupsPage ? "Pending Top-ups" : isStaffPage ? "Staff & Roles" : isActivityPage ? "Activity Logs" : "Dashboard";
 
   async function handleLogout() {
     if (loggingOut) return;
@@ -315,7 +316,9 @@ export default function Home({ user, onLogout }: HomeProps) {
           ) : isTopupsPage ? (
             <Topups />
           ) : isStaffPage ? (
-            <StaffAccess />
+            <StaffAccess initialTab="staff" />
+          ) : isActivityPage ? (
+            <StaffAccess initialTab="activity" />
           ) : (
             <>
               <section className="mb-7 flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
