@@ -110,9 +110,9 @@ function requiredPortalPermission(method: PortalMethod, originalUrl: string): st
   if (path === "/transactions") return "transactions.view";
   if (path === "/topups") return "topups.view";
   if (path === "/products") return method === "GET" ? "products.view" : "products.manage";
-  if (/^\\/products\\/[a-f0-9]{24}$/i.test(path)) return "products.manage";
+  if (path.startsWith("/products/") && /^[a-f0-9]{24}$/i.test(path.slice(10))) return "products.manage";
   if (path === "/catalogs") return "catalogs.view";
-  if (/^\\/catalogs\\/[a-f0-9]{24}$/i.test(path)) return "catalogs.manage";
+  if (path.startsWith("/catalogs/") && /^[a-f0-9]{24}$/i.test(path.slice(10))) return "catalogs.manage";
   if (path === "/media") return "products.manage";
   return null;
 }
