@@ -71,7 +71,7 @@ The Admin A preview deployment reached READY for the Admin roadmap branch. Store
 
 ### Phase 1 status — source audit and security baseline complete
 
-<badge label="Complete" color="success" />
+**Status: Complete — source audit and CI security baseline**
 
 The source-level integration audit and code-level security baseline are complete in draft PRs #1, #22 and #24.
 
