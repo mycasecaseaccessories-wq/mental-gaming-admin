@@ -66,7 +66,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     items: [
       { label: "Products", href: "/products", icon: Package, available: true, permission: "products.view" },
       { label: "Catalogs & Images", href: "/catalogs", icon: Layers, available: true, permission: "catalogs.view" },
-      { label: "Wallet", href: "/wallet", icon: Wallet, available: true, permission: "wallet.view" },
+      { label: "Wallet", href: "/wallet", icon: Wallet, available: true, permission: "customers.view" },
       { label: "Transactions", href: "/transactions", icon: CircleDollarSign, available: true, permission: "transactions.view" },
       { label: "Top-up Reviews", href: "/topups", icon: CreditCard, available: true, permission: "topups.view" },
     ],
@@ -211,7 +211,7 @@ export default function Home({ user, onLogout }: HomeProps) {
     : location === "/topups" ? "topups.view"
     : location === "/staff" ? "staff.manage"
     : location === "/activity" ? "audit.view"
-    : location === "/wallet" ? "wallet.view"
+     : location === "/wallet" ? "customers.view"
     : location === "/analytics" ? "analytics.view"
     : location === "/settings" || location === "/gateways" ? "settings.view"
     : "dashboard.view";
