@@ -25,7 +25,7 @@ Audit baseline: source archives supplied on 2026-11-01, plus GitHub repository m
 | Store API | HMAC-protected admin-portal product/catalog/media endpoints; MongoDB-backed | Existing; replay protection hardened in PR #24 |
 | Telegram customer auth | Telegram Login Widget / WebApp init-data verification in customer storefront/API | Existing for customers; not yet Admin Login |
 | Legacy storefront admin | Admin routes/pages exist in Store monorepo and use Telegram auth + admin auth | Keep until Admin A parity is tested |
-| Deployment | Store/API preview deployments reached READY; API preview emitted `skip-api-build`; API bundle was separately compiled in an isolated sandbox | Preview only; API runtime/build configuration still needs verification |
+| Deployment | Admin A, Storefront and API preview deployments reached READY; API preview emitted `skip-api-build`; API bundle was separately compiled in an isolated sandbox | Preview only; API runtime/build configuration still needs verification |
 
 ## Phase 1 implementation snapshot — 2026-11-02
 
@@ -61,7 +61,7 @@ GitHub Actions run #127 passed frozen-lockfile install, formatting, TypeScript t
 
 ### Preview verification limits
 
-The Storefront and API preview deployments reached READY for the security branch. The API project's Vercel build emitted `skip-api-build`, so READY does not prove that Vercel compiled or executed the API bundle. The serverless bundle command was separately compiled successfully in an isolated sandbox. A safe API runtime smoke test and review of the API project's Vercel build/ignore configuration remain open.
+The Admin A preview deployment reached READY for the Admin roadmap branch. Storefront and API preview deployments also reached READY for the consolidated security branch. The API project's Vercel build emitted `skip-api-build`, so READY does not prove that Vercel compiled or executed the API bundle. The serverless bundle command was separately compiled successfully in an isolated sandbox. A safe API runtime smoke test and review of the API project's Vercel build/ignore configuration remain open.
 
 ### Phase 1 exit items still open
 
