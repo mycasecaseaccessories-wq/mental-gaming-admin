@@ -75,8 +75,10 @@ function resolveServicePath(method: PortalMethod, originalUrl: string): string |
     users: new Set(["page", "q"]),
     transactions: new Set(["page", "type", "status"]),
     topups: new Set(["page"]),
+    analytics: new Set(["period"]),
+    gateways: new Set(),
   };
-  if (["summary", "orders", "users", "transactions", "topups"].includes(path.slice(1)) && method === "GET") {
+  if (["summary", "orders", "users", "transactions", "topups", "analytics", "gateways"].includes(path.slice(1)) && method === "GET") {
     const allowed = readOnlyQueryRoutes[path.slice(1)];
     if (allowed && (!hasQuery || hasOnlyQueryKeys(search, allowed))) return `${SERVICE_PREFIX}${suffix}`;
     return null;
@@ -101,6 +103,8 @@ function resolveServicePath(method: PortalMethod, originalUrl: string): string |
 function requiredPortalPermission(method: PortalMethod, originalUrl: string): string | null {
   const path = originalUrl.split("?", 1)[0].replace(ADMIN_PREFIX, "");
   if (path === "/summary") return "dashboard.view";
+  if (path === "/analytics") return "analytics.view";
+  if (path === "/gateways") return "settings.view";
   if (path === "/orders") return "orders.view";
   if (path === "/users") return "customers.view";
   if (path === "/transactions") return "transactions.view";
@@ -224,6 +228,8 @@ export function registerAdminProductRoutes(app: Express, options: ProductProxyOp
   router.get("/users", (req, res) => void sendPortalRequest(req, res, "GET", resolvedOptions));
   router.get("/transactions", (req, res) => void sendPortalRequest(req, res, "GET", resolvedOptions));
   router.get("/topups", (req, res) => void sendPortalRequest(req, res, "GET", resolvedOptions));
+  router.get("/analytics", (req, res) => void sendPortalRequest(req, res, "GET", resolvedOptions));
+  router.get("/gateways", (req, res) => void sendPortalRequest(req, res, "GET", resolvedOptions));
   router.get("/products", (req, res) => void sendPortalRequest(req, res, "GET", resolvedOptions));
   router.post("/products", (req, res) => void sendPortalRequest(req, res, "POST", resolvedOptions));
   router.patch("/products/:id", (req, res) => void sendPortalRequest(req, res, "PATCH", resolvedOptions));
