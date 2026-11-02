@@ -3,10 +3,10 @@ import { createHash, createHmac, randomBytes } from "node:crypto";
 import express from "express";
 import type { AddressInfo } from "node:net";
 import { createAdminSession, registerAdminAuthRoutes } from "./adminAuth";
-import { registerAdminProductRoutes } from "./adminProducts";
+import { getProductApiOrigin, registerAdminProductRoutes } from "./adminProducts";
 
 describe("admin product API proxy", () => {
-  const keys = ["MG_ADMIN_EMAIL", "MG_ADMIN_PASSWORD", "MG_ADMIN_SESSION_SECRET", "MG_PRODUCT_API_SECRET"] as const;
+  const keys = ["MG_ADMIN_EMAIL", "MG_ADMIN_PASSWORD", "MG_ADMIN_SESSION_SECRET", "MG_PRODUCT_API_SECRET", "MG_PRODUCT_API_ORIGIN", "VERCEL_ENV"] as const;
   const original = new Map<string, string | undefined>();
   type TestServer = ReturnType<ReturnType<typeof express>["listen"]>;
   let server: TestServer;
@@ -65,6 +65,30 @@ describe("admin product API proxy", () => {
     const body = await response.json() as { csrfToken: string };
     return body.csrfToken;
   }
+
+  it("does not default preview deployments to the production Store API", () => {
+    process.env.VERCEL_ENV = "preview";
+    delete process.env.MG_PRODUCT_API_ORIGIN;
+    expect(getProductApiOrigin()).toBe("");
+  });
+
+  it("uses an explicitly configured preview Store API origin", () => {
+    process.env.VERCEL_ENV = "preview";
+    process.env.MG_PRODUCT_API_ORIGIN = "https://preview-store-api.example.test";
+    expect(getProductApiOrigin()).toBe("https://preview-store-api.example.test");
+  });
+
+  it("uses the production Store API default only in production", () => {
+    process.env.VERCEL_ENV = "production";
+    delete process.env.MG_PRODUCT_API_ORIGIN;
+    expect(getProductApiOrigin()).toBe("https://mental-gaming-store.vercel.app");
+  });
+
+  it("fails closed for local development without an explicit Store API origin", () => {
+    delete process.env.VERCEL_ENV;
+    delete process.env.MG_PRODUCT_API_ORIGIN;
+    expect(getProductApiOrigin()).toBe("");
+  });
 
   it("does not call the store API without a valid admin session", async () => {
     const response = await fetch(`${baseUrl}/api/admin/products?page=1`);
