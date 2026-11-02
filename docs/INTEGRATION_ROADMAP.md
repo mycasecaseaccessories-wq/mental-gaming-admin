@@ -59,6 +59,12 @@ Draft PR #24 consolidates the Phase 1 API security work:
 
 GitHub Actions run #127 passed frozen-lockfile install, formatting, TypeScript typecheck, bot tests, API security tests (4/4), full workspace build and production dependency audit. The VPS deployment job was skipped; no production deployment occurred.
 
+### Admin A preview isolation
+
+The Admin A product proxy previously had a hard-coded Storefront production origin. Draft PR #1 now adds `MG_PRODUCT_API_ORIGIN` and fails closed when the origin is not explicitly configured outside Vercel Production. Production retains the existing Storefront default; Preview and local development require an explicit API origin.
+
+No Vercel environment variable was changed. Before using Admin A Preview for product/catalog testing, set its Preview-only `MG_PRODUCT_API_ORIGIN` to the matching Store API preview branch alias and verify that the HMAC secret matches. Until then, the preview product proxy returns HTTP 503 instead of silently writing to production.
+
 ### Preview verification limits
 
 The Admin A preview deployment reached READY for the Admin roadmap branch. Storefront and API preview deployments also reached READY for the consolidated security branch. The API project's Vercel build emitted `skip-api-build`, so READY does not prove that Vercel compiled or executed the API bundle. The serverless bundle is now compiled by GitHub CI run #131 and passed. A safe API runtime smoke test and review of the API project's Vercel build/ignore configuration remain open.
@@ -67,7 +73,7 @@ The Admin A preview deployment reached READY for the Admin roadmap branch. Store
 
 - Verify API Vercel build configuration and a non-production runtime smoke test.
 - Run MongoDB replay integration tests against an isolated test database across multiple API instances.
-- Verify HMAC secret equality across the Admin A, Storefront and API environments without exposing values.
+- Set the Admin A Preview-only `MG_PRODUCT_API_ORIGIN` to the matching Store API preview alias, then verify HMAC secret equality across the Preview environments without exposing values.
 - Finish route-level contract mapping for Admin A read-only orders/users/wallet/transaction endpoints.
 - Review top-up approval and balance-adjustment atomicity/idempotency before exposing financial writes.
 - Keep all production data and MY CASE resources untouched.
