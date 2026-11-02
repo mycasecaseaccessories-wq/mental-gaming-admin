@@ -22,11 +22,12 @@ describe("admin staff access routes", () => {
     for (const key of keys) original.set(key, process.env[key]);
     process.env.MG_ADMIN_EMAIL = "owner@example.com";
     process.env.MG_ADMIN_PASSWORD = "Test-only-Site-Password-123!";
-    process.env.MG_ADMIN_SESSION_SECRET = randomBytes(32).toString("base64url");
+    const sessionSecret = randomBytes(32).toString("base64url");
+    process.env.MG_ADMIN_SESSION_SECRET = sessionSecret;
     delete process.env.MG_ADMIN_SUPABASE_URL;
     delete process.env.MG_ADMIN_SUPABASE_SERVICE_ROLE_KEY;
 
-    const token = await createAdminSession("owner@example.com", process.env.MG_ADMIN_SESSION_SECRET);
+    const token = await createAdminSession("owner@example.com", sessionSecret);
     sessionCookie = "mg_admin_session=" + token;
 
     const app = express();
