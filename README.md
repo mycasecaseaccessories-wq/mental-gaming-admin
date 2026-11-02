@@ -10,8 +10,9 @@ Admin project ၏ Production ပတ်ဝန်းကျင်တွင် အ�
 - `MG_ADMIN_PASSWORD` — ဤ website အတွက် သီးခြား password၊ အနည်းဆုံး စာလုံးရေ 12 လုံး။
 - `MG_ADMIN_SESSION_SECRET` — session/CSRF လက်မှတ်ထိုးရန် အသုံးပြုသော ကျပန်းလျှို့ဝှက်တန်ဖိုး၊ အနည်းဆုံး 32 bytes။
 - `MG_PRODUCT_API_SECRET` — Admin နှင့် `mental-gaming-store` API project နှစ်ခုစလုံးတွင် တူညီရမည့် service လျှို့ဝှက်တန်ဖိုး၊ အနည်းဆုံး 32 bytes။
+- `MG_PRODUCT_API_ORIGIN` — Preview/local ပတ်ဝန်းကျင်တွင် ချိတ်ဆက်မည့် Store API HTTPS origin။ Production တွင် မသတ်မှတ်ထားပါက `https://mental-gaming-store.vercel.app` ကိုသာ default သုံးသည်။
 
-လျှို့ဝှက်တန်ဖိုးများကို source code၊ Git၊ browser bundle သို့မဟုတ် build log ထဲ မထည့်ပါနှင့်။ Gmail account ၏ မူရင်း password ကို မသုံးပါနှင့်။ Catalog နှင့် image upload များသည် MongoDB `MONGODB_URI` သတ်မှတ်ထားသော `mental-gaming-store` API မှတစ်ဆင့် လုပ်ဆောင်သည်။
+လျှို့ဝှက်တန်ဖိုးများကို source code၊ Git၊ browser bundle သို့မဟုတ် build log ထဲ မထည့်ပါနှင့်။ Gmail account ၏ မူရင်း password ကို မသုံးပါနှင့်။ Preview နှင့် local development တွင် `MG_PRODUCT_API_ORIGIN` မသတ်မှတ်ထားပါက Store API ခေါ်ဆိုမှုကို HTTP 503 ဖြင့် ပိတ်ထားပြီး production API သို့ အလိုအလျောက် မချိတ်ဆက်ပါ။ Preview စမ်းသပ်ရာတွင် Store API ၏ တူညီသော branch preview origin ကိုသာ သတ်မှတ်ပါ။ Catalog နှင့် image upload များသည် MongoDB `MONGODB_URI` သတ်မှတ်ထားသော `mental-gaming-store` API မှတစ်ဆင့် လုပ်ဆောင်သည်။
 
 ## Admin မှ ပုံထည့်နည်း
 
