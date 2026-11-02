@@ -75,7 +75,7 @@ export async function hashStaffPassword(password: string): Promise<{ hash: strin
   return { hash: digest.toString("base64url"), salt: salt.toString("base64url") };
 }
 
-async function staffPasswordMatches(candidate: string, storedHash: string, storedSalt: string): Promise<boolean> {
+export async function staffPasswordMatches(candidate: string, storedHash: string, storedSalt: string): Promise<boolean> {
   if (!candidate || candidate.length > 128) return false;
   try {
     const salt = Buffer.from(storedSalt, "base64url");
