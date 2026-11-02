@@ -75,6 +75,7 @@ describe("admin authentication", () => {
     expect(await verifyAdminSession(token, sessionSecret)).toEqual({
       email: "owner@example.com",
       role: "admin",
+      roleKey: "super_admin",
     });
     expect(await verifyAdminSession(token, randomBytes(32).toString("base64url"))).toBeNull();
   });
@@ -152,12 +153,13 @@ describe("admin authentication", () => {
     expect(sessionSetCookie).toContain("HttpOnly");
     expect(sessionSetCookie).toContain("Secure");
     expect(sessionSetCookie).toContain("SameSite=None");
-    expect(loginBody).toEqual({ user: { email: "owner@example.com", role: "admin" } });
+    expect(loginBody.user).toMatchObject({ email: "owner@example.com", role: "admin", roleKey: "super_admin" });
+    expect(loginBody.user.permissions).toContain("dashboard.view");
     expect(JSON.stringify(loginBody)).not.toContain("Test-only-Site-Password-123!");
 
     const me = await fetch(`${baseUrl}/api/admin-auth/me`, { headers: { Cookie: cookie } });
     expect(me.status).toBe(200);
-    expect(await me.json()).toEqual({ user: { email: "owner@example.com", role: "admin" } });
+    expect(await me.json()).toMatchObject({ user: { email: "owner@example.com", role: "admin", roleKey: "super_admin" } });
 
     const logout = await fetch(`${baseUrl}/api/admin-auth/logout`, {
       method: "POST",
