@@ -257,18 +257,41 @@ export function registerAdminAuthRoutes(app: Express) {
 
     const email = typeof req.body?.email === "string" ? normalizeEmail(req.body.email) : "";
     const password = typeof req.body?.password === "string" ? req.body.password : "";
-    const emailMatches = email.length <= 320 && email === credentials.email;
-    const passwordMatchesConfigured = await passwordMatches(password, credentials.password);
+    if (!email || email.length > 320 || !password || password.length > 128) {
+      res.status(401).json({ error: "အီးမေးလ်လိပ်စာ သို့မဟုတ် password မမှန်ပါ။" });
+      return;
+    }
 
-    if (!emailMatches || !passwordMatchesConfigured) {
+    let token: string | null = null;
+    let user: { email: string; role: "admin" | "staff"; roleKey: string; permissions: string[] } | null = null;
+    if (email === credentials.email && await passwordMatches(password, credentials.password)) {
+      token = await createAdminSession(credentials.email, credentials.sessionSecret, "super_admin");
+      user = {
+        email: credentials.email, role: "admin", roleKey: "super_admin",
+        permissions: ["dashboard.view","orders.view","customers.view","products.view","products.manage","catalogs.view","catalogs.manage","wallet.view","transactions.view","topups.view","analytics.view","settings.view","staff.manage","roles.manage","audit.view","notifications.manage","announcements.manage"],
+      };
+    } else if (email !== credentials.email) {
+      try {
+        const staff = await adminSupabaseRpc<{ email?: string; is_active?: boolean; access_state?: string; password_hash?: string | null; password_salt?: string | null; role_key?: string; permissions?: string[] }>("mg_admin_get_staff_login", { p_email: email });
+        if (staff.email === email && staff.is_active === true && staff.access_state === "active" &&
+            typeof staff.password_hash === "string" && typeof staff.password_salt === "string" &&
+            typeof staff.role_key === "string" && await staffPasswordMatches(password, staff.password_hash, staff.password_salt)) {
+          token = await createAdminSession(email, credentials.sessionSecret, staff.role_key);
+          user = { email, role: "staff", roleKey: staff.role_key, permissions: Array.isArray(staff.permissions) ? staff.permissions : [] };
+        }
+      } catch {
+        // Keep the same public response for missing, inactive, and unavailable staff accounts.
+      }
+    }
+
+    if (!token || !user) {
       res.status(401).json({ error: "အီးမေးလ်လိပ်စာ သို့မဟုတ် password မမှန်ပါ။" });
       return;
     }
 
     clearLoginAttempts(ip);
-    const token = await createAdminSession(credentials.email, credentials.sessionSecret);
     res.cookie(SESSION_COOKIE, token, sessionCookieOptions());
-    res.status(200).json({ user: { email: credentials.email, role: "admin" } });
+    res.status(200).json({ user });
   });
 
   app.get("/api/admin-auth/me", async (req: Request, res: Response) => {
@@ -280,13 +303,33 @@ export function registerAdminAuthRoutes(app: Express) {
 
     const token = parseCookieHeader(req.headers.cookie ?? "")[SESSION_COOKIE];
     const session = token ? await verifyAdminSession(token, credentials.sessionSecret) : null;
-    if (!session || session.email !== credentials.email) {
+    if (!session || (session.role === "admin" && session.email !== credentials.email) ||
+        (session.role === "staff" && session.email === credentials.email)) {
       clearSessionCookie(res);
       res.status(401).json({ error: "ဝင်ရောက်ခွင့် မရှိပါ။" });
       return;
     }
 
-    res.status(200).json({ user: session });
+    if (session.role === "staff") {
+      try {
+        const access = await adminSupabaseRpc<{ email?: string; is_active?: boolean; access_state?: string; role_key?: string; permissions?: string[] }>("mg_admin_get_staff_access", { p_email: session.email });
+        if (access.email !== session.email || access.is_active !== true || access.access_state !== "active") {
+          clearSessionCookie(res);
+          res.status(401).json({ error: "ဤဝန်ထမ်းအကောင့်ကို ပိတ်ထားပါသည်။" });
+          return;
+        }
+        res.status(200).json({ user: { email: session.email, role: "staff", roleKey: access.role_key, permissions: Array.isArray(access.permissions) ? access.permissions : [] } });
+        return;
+      } catch {
+        res.status(503).json({ error: "Staff permission service ကို ယာယီအသုံးမပြုနိုင်ပါ။" });
+        return;
+      }
+    }
+
+    res.status(200).json({ user: {
+      email: session.email, role: "admin", roleKey: "super_admin",
+      permissions: ["dashboard.view","orders.view","customers.view","products.view","products.manage","catalogs.view","catalogs.manage","wallet.view","transactions.view","topups.view","analytics.view","settings.view","staff.manage","roles.manage","audit.view","notifications.manage","announcements.manage"],
+    } });
   });
 
   app.post("/api/admin-auth/logout", (req: Request, res: Response) => {
