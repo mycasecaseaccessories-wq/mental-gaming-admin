@@ -64,7 +64,7 @@ describe("admin staff access routes", () => {
     expect(response.status).toBe(503);
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(await response.json()).toEqual({
-      error: "Admin permission service ကို ချိတ်ဆက်၍ မရပါ။ လုံခြုံရေးအတွက် လုပ်ဆောင်ချက်ကို ပိတ်ထားသည်။",
+      error: "Admin Supabase အတွက် protected environment settings မပြည့်စုံသေးပါ။",
     });
   });
 });
