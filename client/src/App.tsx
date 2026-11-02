@@ -115,7 +115,7 @@ function AppContent() {
     );
   }
 
-  const knownPath = ["/", "/login", "/dashboard", "/products", "/catalogs", "/orders", "/customers", "/transactions", "/topups", "/staff"].includes(location);
+  const knownPath = ["/", "/login", "/dashboard", "/products", "/catalogs", "/orders", "/customers", "/transactions", "/topups", "/staff", "/activity", "/wallet", "/analytics", "/settings"].includes(location);
   if (!knownPath) {
     return (
       <StatusPage
