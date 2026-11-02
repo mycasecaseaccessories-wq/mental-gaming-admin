@@ -33,7 +33,7 @@ import Transactions from "@/pages/Transactions";
 import Topups from "@/pages/Topups";
 import StaffAccess from "@/pages/StaffAccess";
 
-function isDashboardRoute(path: string): boolean { return !["/products", "/catalogs", "/orders", "/customers", "/transactions", "/topups", "/staff", "/activity"].includes(path); }
+function isDashboardRoute(path: string): boolean { return !["/products", "/catalogs", "/orders", "/customers", "/transactions", "/topups", "/staff", "/activity", "/wallet", "/analytics", "/settings"].includes(path); }
 
 type HomeProps = {
   user: AdminUser;
@@ -45,34 +45,35 @@ type NavItem = {
   href?: string;
   icon: LucideIcon;
   available: boolean;
+  permission?: string;
 };
 
 const navGroups: { label: string; items: NavItem[] }[] = [
   {
     label: "အထွေထွေ",
     items: [
-      { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, available: true },
-      { label: "Orders", href: "/orders", icon: ClipboardList, available: true },
-      { label: "Customers", href: "/customers", icon: Users, available: true },
+      { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, available: true, permission: "dashboard.view" },
+      { label: "Orders", href: "/orders", icon: ClipboardList, available: true, permission: "orders.view" },
+      { label: "Customers", href: "/customers", icon: Users, available: true, permission: "customers.view" },
     ],
   },
   {
     label: "ဆိုင်စီမံခန့်ခွဲမှု",
     items: [
-      { label: "Products", href: "/products", icon: Package, available: true },
-      { label: "Catalogs & Images", href: "/catalogs", icon: Layers, available: true },
-      { label: "Wallet", icon: Wallet, available: false },
-      { label: "Transactions", href: "/transactions", icon: CircleDollarSign, available: true },
-      { label: "Top-up Reviews", href: "/topups", icon: CreditCard, available: true },
+      { label: "Products", href: "/products", icon: Package, available: true, permission: "products.view" },
+      { label: "Catalogs & Images", href: "/catalogs", icon: Layers, available: true, permission: "catalogs.view" },
+      { label: "Wallet", href: "/wallet", icon: Wallet, available: true, permission: "wallet.view" },
+      { label: "Transactions", href: "/transactions", icon: CircleDollarSign, available: true, permission: "transactions.view" },
+      { label: "Top-up Reviews", href: "/topups", icon: CreditCard, available: true, permission: "topups.view" },
     ],
   },
   {
     label: "စနစ်နှင့် လုံခြုံရေး",
     items: [
-      { label: "Analytics", icon: ChartNoAxesCombined, available: false },
-      { label: "Staff & Roles", href: "/staff", icon: ShieldCheck, available: true },
-      { label: "Activity Logs", href: "/activity", icon: Activity, available: true },
-      { label: "Settings", icon: Settings2, available: false },
+      { label: "Analytics", href: "/analytics", icon: ChartNoAxesCombined, available: true, permission: "analytics.view" },
+      { label: "Staff & Roles", href: "/staff", icon: ShieldCheck, available: true, permission: "staff.manage" },
+      { label: "Activity Logs", href: "/activity", icon: Activity, available: true, permission: "audit.view" },
+      { label: "Settings", href: "/settings", icon: Settings2, available: true, permission: "settings.view" },
     ],
   },
 ];
@@ -177,8 +178,11 @@ export default function Home({ user, onLogout }: HomeProps) {
   const isTopupsPage = location === "/topups";
   const isStaffPage = location === "/staff";
   const isActivityPage = location === "/activity";
+  const isWalletPage = location === "/wallet";
+  const isAnalyticsPage = location === "/analytics";
+  const isSettingsPage = location === "/settings";
   const isDashboardPage = isDashboardRoute(location);
-  const pageTitle = isProductsPage ? "Products" : isCatalogsPage ? "Catalogs & Images" : isOrdersPage ? "Orders" : isCustomersPage ? "Customers" : isTransactionsPage ? "Transactions" : isTopupsPage ? "Pending Top-ups" : isStaffPage ? "Staff & Roles" : isActivityPage ? "Activity Logs" : "Dashboard";
+  const pageTitle = isProductsPage ? "Products" : isCatalogsPage ? "Catalogs & Images" : isOrdersPage ? "Orders" : isCustomersPage ? "Customers" : isTransactionsPage ? "Transactions" : isTopupsPage ? "Pending Top-ups" : isStaffPage ? "Staff & Roles" : isActivityPage ? "Activity Logs" : isWalletPage ? "Wallet" : isAnalyticsPage ? "Analytics" : isSettingsPage ? "Settings" : "Dashboard";
 
   async function handleLogout() {
     if (loggingOut) return;
@@ -237,7 +241,7 @@ export default function Home({ user, onLogout }: HomeProps) {
             <section key={group.label}>
               <h2 className="mb-2 px-3 text-[10px] font-semibold tracking-[0.14em] text-slate-600">{group.label}</h2>
               <div className="space-y-1">
-                {group.items.map((item) => (
+                {group.items.filter((item) => !item.permission || user.permissions?.includes(item.permission)).map((item) => (
                   <SidebarItem
                     key={item.label}
                     item={item}
