@@ -116,6 +116,13 @@ export function registerAdminStaffRoutes(app: Express) {
     } catch (error) { sendError(res, error); }
   });
 
+  router.get("/settings", async (req, res) => {
+    if (!await authorize(req, res, "settings.view")) return;
+    try {
+      res.json({ items: await rpc<unknown[]>("mg_admin_list_safe_settings") });
+    } catch (error) { sendError(res, error); }
+  });
+
   router.get("/activity", async (req, res) => {
     if (!await authorize(req, res, "audit.view")) return;
     try {
