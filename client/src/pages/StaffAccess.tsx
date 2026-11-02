@@ -22,6 +22,8 @@ export default function StaffAccess({ initialTab = "staff" }: { initialTab?: "st
   const [staff, setStaff] = useState<Staff[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [permissions, setPermissions] = useState<Permission[]>([]);
+  const [roleDrafts, setRoleDrafts] = useState<Record<string, string[]>>({});
+  const [savingRole, setSavingRole] = useState("");
   const [logs, setLogs] = useState<Audit[]>([]);
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -42,6 +44,7 @@ export default function StaffAccess({ initialTab = "staff" }: { initialTab?: "st
       } else if (tab === "roles") {
         const data = await readJson<{ roles: Role[]; permissions: Permission[] }>("/api/admin/access/roles");
         setRoles(data.roles); setPermissions(data.permissions);
+        setRoleDrafts(Object.fromEntries(data.roles.map(role => [role.role_key, role.permissions])));
       } else {
         const data = await readJson<{ items: Audit[] }>("/api/admin/access/activity?limit=150");
         setLogs(data.items);
@@ -61,6 +64,33 @@ export default function StaffAccess({ initialTab = "staff" }: { initialTab?: "st
   function resetForm() {
     setEmail(""); setDisplayName(""); setRoleKey("viewer");
     setIsActive(true); setEditing(false);
+  }
+
+  function togglePermission(roleKey: string, permissionKey: string, checked: boolean) {
+    setRoleDrafts(current => {
+      const currentPermissions = current[roleKey] ?? [];
+      const next = checked ? [...new Set([...currentPermissions, permissionKey])] : currentPermissions.filter(permission => permission !== permissionKey);
+      return { ...current, [roleKey]: next };
+    });
+  }
+
+  async function saveRole(role: Role) {
+    setSavingRole(role.role_key); setError(""); setNotice("");
+    try {
+      const csrfResponse = await fetch("/api/admin-auth/csrf", { credentials: "include", cache: "no-store" });
+      const csrf = await csrfResponse.json() as { csrfToken?: string; error?: string };
+      if (!csrfResponse.ok || !csrf.csrfToken) throw new Error(csrf.error || "Security token မရရှိပါ။");
+      const response = await fetch("/api/admin/access/roles/" + encodeURIComponent(role.role_key), {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf.csrfToken, Accept: "application/json" },
+        body: JSON.stringify({ permissions: roleDrafts[role.role_key] ?? [] }),
+      });
+      const body = await response.json().catch(() => ({})) as { error?: string };
+      if (!response.ok) throw new Error(body.error || "Permission သိမ်းဆည်း၍ မရပါ။");
+      setNotice(role.display_name + " Permission များကို သိမ်းဆည်းပြီးပါပြီ။");
+      await load();
+    } catch (e) { setError(e instanceof Error ? e.message : "Permission သိမ်းဆည်း၍ မရပါ။"); }
+    finally { setSavingRole(""); }
   }
 
   async function save(event: React.FormEvent<HTMLFormElement>) {
