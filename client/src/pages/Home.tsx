@@ -32,8 +32,12 @@ import Customers from "@/pages/Customers";
 import Transactions from "@/pages/Transactions";
 import Topups from "@/pages/Topups";
 import StaffAccess from "@/pages/StaffAccess";
+import WalletPage from "@/pages/Wallet";
+import AnalyticsPage from "@/pages/Analytics";
+import SettingsPage from "@/pages/Settings";
+import GatewaysPage from "@/pages/Gateways";
 
-function isDashboardRoute(path: string): boolean { return !["/products", "/catalogs", "/orders", "/customers", "/transactions", "/topups", "/staff", "/activity", "/wallet", "/analytics", "/settings"].includes(path); }
+function isDashboardRoute(path: string): boolean { return !["/products", "/catalogs", "/orders", "/customers", "/transactions", "/topups", "/staff", "/activity", "/wallet", "/analytics", "/settings", "/gateways"].includes(path); }
 
 type HomeProps = {
   user: AdminUser;
@@ -73,6 +77,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
       { label: "Analytics", href: "/analytics", icon: ChartNoAxesCombined, available: true, permission: "analytics.view" },
       { label: "Staff & Roles", href: "/staff", icon: ShieldCheck, available: true, permission: "staff.manage" },
       { label: "Activity Logs", href: "/activity", icon: Activity, available: true, permission: "audit.view" },
+      { label: "Payment Gateways", href: "/gateways", icon: CreditCard, available: true, permission: "settings.view" },
       { label: "Settings", href: "/settings", icon: Settings2, available: true, permission: "settings.view" },
     ],
   },
@@ -181,8 +186,9 @@ export default function Home({ user, onLogout }: HomeProps) {
   const isWalletPage = location === "/wallet";
   const isAnalyticsPage = location === "/analytics";
   const isSettingsPage = location === "/settings";
+  const isGatewaysPage = location === "/gateways";
   const isDashboardPage = isDashboardRoute(location);
-  const pageTitle = isProductsPage ? "Products" : isCatalogsPage ? "Catalogs & Images" : isOrdersPage ? "Orders" : isCustomersPage ? "Customers" : isTransactionsPage ? "Transactions" : isTopupsPage ? "Pending Top-ups" : isStaffPage ? "Staff & Roles" : isActivityPage ? "Activity Logs" : isWalletPage ? "Wallet" : isAnalyticsPage ? "Analytics" : isSettingsPage ? "Settings" : "Dashboard";
+  const pageTitle = isProductsPage ? "Products" : isCatalogsPage ? "Catalogs & Images" : isOrdersPage ? "Orders" : isCustomersPage ? "Customers" : isTransactionsPage ? "Transactions" : isTopupsPage ? "Pending Top-ups" : isStaffPage ? "Staff & Roles" : isActivityPage ? "Activity Logs" : isWalletPage ? "Wallet" : isAnalyticsPage ? "Analytics" : isSettingsPage ? "Settings" : isGatewaysPage ? "Payment Gateways" : "Dashboard";
 
   async function handleLogout() {
     if (loggingOut) return;
@@ -323,6 +329,14 @@ export default function Home({ user, onLogout }: HomeProps) {
             <StaffAccess initialTab="staff" />
           ) : isActivityPage ? (
             <StaffAccess initialTab="activity" />
+          ) : isWalletPage ? (
+            <WalletPage />
+          ) : isAnalyticsPage ? (
+            <AnalyticsPage />
+          ) : isSettingsPage ? (
+            <SettingsPage />
+          ) : isGatewaysPage ? (
+            <GatewaysPage />
           ) : (
             <>
               <section className="mb-7 flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
