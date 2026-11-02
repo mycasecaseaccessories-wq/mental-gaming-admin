@@ -218,10 +218,10 @@ function staffLoginAttemptKeys(ip: string, email: string): string[] {
   ];
 }
 
-async function allowStaffLoginAttempt(ip: string, email: string): Promise<boolean> {
+async function allowStaffLoginAttempt(ip: string, email: string, rpc: typeof adminSupabaseRpc = adminSupabaseRpc): Promise<boolean> {
   const keys = staffLoginAttemptKeys(ip, email);
   const results = await Promise.all(keys.map((key) =>
-    adminSupabaseRpc<boolean>("mg_admin_claim_login_attempt", {
+    rpc<boolean>("mg_admin_claim_login_attempt", {
       p_attempt_key: key,
       p_window_seconds: 900,
       p_max_attempts: LOGIN_MAX_ATTEMPTS,
@@ -230,9 +230,9 @@ async function allowStaffLoginAttempt(ip: string, email: string): Promise<boolea
   return results.every(Boolean);
 }
 
-async function clearStaffLoginAttempts(ip: string, email: string): Promise<void> {
+async function clearStaffLoginAttempts(ip: string, email: string, rpc: typeof adminSupabaseRpc = adminSupabaseRpc): Promise<void> {
   await Promise.all(staffLoginAttemptKeys(ip, email).map((key) =>
-    adminSupabaseRpc<void>("mg_admin_clear_login_attempt", { p_attempt_key: key }),
+    rpc<void>("mg_admin_clear_login_attempt", { p_attempt_key: key }),
   ));
 }
 
@@ -248,7 +248,8 @@ function clearSessionCookie(res: Response) {
   res.clearCookie(SESSION_COOKIE, { ...sessionCookieOptions(), maxAge: 0 });
 }
 
-export function registerAdminAuthRoutes(app: Express) {
+export function registerAdminAuthRoutes(app: Express, dependencies: { rpc?: typeof adminSupabaseRpc } = {}) {
+  const rpc = dependencies.rpc ?? adminSupabaseRpc;
   app.use("/api/admin-auth", (_req, res, next) => {
     sendNoStore(res);
     next();
@@ -297,17 +298,17 @@ export function registerAdminAuthRoutes(app: Express) {
       };
     } else if (email !== credentials.email) {
       try {
-        if (!await allowStaffLoginAttempt(ip, email)) {
+        if (!await allowStaffLoginAttempt(ip, email, rpc)) {
           res.status(429).json({ error: "အကြိမ်များစွာ ကြိုးစားထားပါတယ်။ ခဏစောင့်ပြီး ထပ်ကြိုးစားပါ။" });
           return;
         }
-        const staff = await adminSupabaseRpc<{ email?: string; is_active?: boolean; access_state?: string; password_hash?: string | null; password_salt?: string | null; role_key?: string; permissions?: string[] }>("mg_admin_get_staff_login", { p_email: email });
+        const staff = await rpc<{ email?: string; is_active?: boolean; access_state?: string; password_hash?: string | null; password_salt?: string | null; role_key?: string; permissions?: string[] }>("mg_admin_get_staff_login", { p_email: email });
         if (staff.email === email && staff.is_active === true && staff.access_state === "active" &&
             typeof staff.password_hash === "string" && typeof staff.password_salt === "string" &&
             typeof staff.role_key === "string" && await staffPasswordMatches(password, staff.password_hash, staff.password_salt)) {
           token = await createAdminSession(email, credentials.sessionSecret, staff.role_key);
           user = { email, role: "staff", roleKey: staff.role_key, permissions: Array.isArray(staff.permissions) ? staff.permissions : [] };
-          await clearStaffLoginAttempts(ip, email);
+          await clearStaffLoginAttempts(ip, email, rpc);
         }
       } catch {
         // Keep the same public response for missing, inactive, and unavailable staff accounts.
@@ -342,7 +343,7 @@ export function registerAdminAuthRoutes(app: Express) {
 
     if (session.role === "staff") {
       try {
-        const access = await adminSupabaseRpc<{ email?: string; is_active?: boolean; access_state?: string; role_key?: string; permissions?: string[] }>("mg_admin_get_staff_access", { p_email: session.email });
+        const access = await rpc<{ email?: string; is_active?: boolean; access_state?: string; role_key?: string; permissions?: string[] }>("mg_admin_get_staff_access", { p_email: session.email });
         if (access.email !== session.email || access.is_active !== true || access.access_state !== "active") {
           clearSessionCookie(res);
           res.status(401).json({ error: "ဤဝန်ထမ်းအကောင့်ကို ပိတ်ထားပါသည်။" });
