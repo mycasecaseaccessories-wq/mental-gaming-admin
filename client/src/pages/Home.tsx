@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import {
   Activity,
@@ -27,6 +27,8 @@ import type { LucideIcon } from "lucide-react";
 import type { AdminUser } from "@/lib/adminAuth";
 import Products from "@/pages/Products";
 import Catalogs from "@/pages/Catalogs";
+
+function isDashboardRoute(path: string): boolean { return path !== "/products" && path !== "/catalogs"; }
 
 type HomeProps = {
   user: AdminUser;
@@ -119,16 +121,16 @@ function MetricCard({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-medium text-slate-400">{label}</p>
-          <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-200">—</p>
+          <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-100">{value}</p>
         </div>
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-cyan-200/10 bg-cyan-200/[0.06] text-cyan-200">
           <Icon size={18} strokeWidth={1.8} aria-hidden="true" />
         </span>
       </div>
       <p className="mt-3 text-[11px] leading-5 text-slate-500">{description}</p>
-      <div className="mt-4 flex items-center gap-1.5 text-[10px] text-amber-200/80">
-        <span className="h-1.5 w-1.5 rounded-full bg-amber-300/80" />
-        API ချိတ်ဆက်မှု မပြီးသေးပါ
+      <div className={`mt-4 flex items-center gap-1.5 text-[10px] ${status === "live" ? "text-lime-200" : "text-amber-200/80"}`}>
+        <span className={`h-1.5 w-1.5 rounded-full ${status === "live" ? "bg-lime-300" : "bg-amber-300/80"}`} />
+        {status === "live" ? "Live · MongoDB" : status === "loading" ? "ဖတ်ရှုနေသည်…" : "API မရရှိသေးပါ"}
       </div>
     </article>
   );
@@ -139,6 +141,25 @@ export default function Home({ user, onLogout }: HomeProps) {
   const [loggingOut, setLoggingOut] = useState(false);
   const [logoutError, setLogoutError] = useState("");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [summary, setSummary] = useState<{
+    pendingOrders: number; processingOrders: number; pendingTopups: number;
+    ordersToday: number; salesToday: number; totalUsers: number; walletKS: number; walletCoin: number;
+  } | null>(null);
+  const [summaryState, setSummaryState] = useState<"loading" | "live" | "unavailable">("loading");
+
+  useEffect(() => {
+    if (!isDashboardRoute(location)) return;
+    let active = true;
+    fetch("/api/admin/summary", { credentials: "include", headers: { Accept: "application/json" }, cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Summary unavailable");
+        return await response.json() as NonNullable<typeof summary>;
+      })
+      .then((data) => { if (active) { setSummary(data); setSummaryState("live"); } })
+      .catch(() => { if (active) { setSummary(null); setSummaryState("unavailable"); } });
+    return () => { active = false; };
+  }, [location]);
+
   const isProductsPage = location === "/products";
   const isCatalogsPage = location === "/catalogs";
   const isDashboardPage = !isProductsPage && !isCatalogsPage;
@@ -286,10 +307,10 @@ export default function Home({ user, onLogout }: HomeProps) {
               </section>
 
               <section className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Store overview metrics">
-                <MetricCard label="စုစုပေါင်း Orders" description="Store API ချိတ်ဆက်ပြီးမှ အချက်အလက် ပြသပါမည်။" icon={ShoppingBag} />
-                <MetricCard label="Customers" description="MongoDB မှ Customer စာရင်းကို ဖတ်ရှုရန် ကျန်ရှိသည်။" icon={Users} />
-                <MetricCard label="Wallet Balance" description="KS နှင့် Coin လက်ကျန်များကို read-only ပြသရန် ကျန်ရှိသည်။" icon={Wallet} />
-                <MetricCard label="Pending Top-ups" description="ငွေကြေးဆိုင်ရာ အတည်ပြုမှုများကို မဖွင့်ရသေးပါ။" icon={CreditCard} />
+                <MetricCard label="Orders Today" value={summary ? summary.ordersToday.toLocaleString("en-US") : "—"} description={summary ? `Pending ${summary.pendingOrders} · Processing ${summary.processingOrders}` : "Store API မှ ဖတ်ရှုသော အချက်အလက်"} icon={ShoppingBag} status={summaryState} />
+                <MetricCard label="Customers" value={summary ? summary.totalUsers.toLocaleString("en-US") : "—"} description="MongoDB customer စုစုပေါင်း" icon={Users} status={summaryState} />
+                <MetricCard label="Wallet Balance" value={summary ? `${summary.walletKS.toLocaleString("en-US")} Ks` : "—"} description={summary ? `${summary.walletCoin.toLocaleString("en-US")} Coins` : "KS နှင့် Coin လက်ကျန် စုစုပေါင်း"} icon={Wallet} status={summaryState} />
+                <MetricCard label="Pending Top-ups" value={summary ? summary.pendingTopups.toLocaleString("en-US") : "—"} description="Read-only queue · Approve/Reject မဖွင့်ရသေးပါ" icon={CreditCard} status={summaryState} />
               </section>
 
               <div className="grid gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(300px,0.85fr)]">
