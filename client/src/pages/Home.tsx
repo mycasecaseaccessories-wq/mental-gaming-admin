@@ -111,10 +111,14 @@ function MetricCard({
   label,
   description,
   icon: Icon,
+  value,
+  status,
 }: {
   label: string;
   description: string;
   icon: LucideIcon;
+  value: string;
+  status: "live" | "loading" | "unavailable";
 }) {
   return (
     <article className="admin-metric-card rounded-2xl border border-white/[0.07] bg-[#101827]/85 p-4 sm:p-5">
