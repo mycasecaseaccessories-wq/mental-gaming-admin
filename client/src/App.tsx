@@ -73,7 +73,7 @@ function AppContent() {
   useEffect(() => {
     if (authState === "signed-in" && location === "/login") {
       setLocation("/dashboard");
-    } else if (authState === "signed-out" && (["/dashboard", "/products", "/catalogs", "/orders", "/customers", "/transactions", "/topups", "/staff"].includes(location))) {
+    } else if (authState === "signed-out" && (["/dashboard", "/products", "/catalogs", "/orders", "/customers", "/transactions", "/topups", "/staff", "/activity"].includes(location))) {
       setLocation("/login");
     }
   }, [authState, location, setLocation]);
