@@ -80,6 +80,10 @@ function sendError(res: Response, error: unknown) {
 
 export function registerAdminStaffRoutes(app: Express) {
   const router = Router();
+  router.use((_req, res, next) => {
+    res.setHeader("Cache-Control", "no-store");
+    next();
+  });
 
   router.get("/staff", async (req, res) => {
     if (!await authorize(req, res, "staff.manage")) return;
