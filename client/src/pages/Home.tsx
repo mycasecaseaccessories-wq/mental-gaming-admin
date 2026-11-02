@@ -380,7 +380,7 @@ export default function Home({ user, onLogout }: HomeProps) {
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <h3 className="text-sm font-semibold text-slate-100">စနစ်အခြေအနေ</h3>
-                      <p className="mt-1 text-[11px] text-slate-500">ချိတ်ဆက်မှုအခြေအနေကို အတည်ပြုပြီးမှ Live ဟု ပြသပါမည်။</p>
+                      <p className="mt-1 text-[11px] text-slate-500">လက်ရှိ Integration နှင့် Permission အခြေအနေ။</p>
                     </div>
                     <span className="rounded-md border border-amber-300/[0.14] bg-amber-300/[0.05] px-2 py-1 text-[10px] text-amber-200">Setup in progress</span>
                   </div>
@@ -388,23 +388,23 @@ export default function Home({ user, onLogout }: HomeProps) {
                     <div className="flex items-center justify-between gap-3 py-3 first:pt-0">
                       <div className="flex items-center gap-3">
                         <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-200/[0.06] text-cyan-200"><Database size={15} /></span>
-                        <div><p className="text-xs font-medium text-slate-200">Store API / MongoDB</p><p className="mt-1 text-[10px] text-slate-500">Orders, customers, wallets, transactions</p></div>
+                        <div><p className="text-xs font-medium text-slate-200">Store API / MongoDB</p><p className="mt-1 text-[10px] text-slate-500">Orders, customers, wallets, transactions, analytics</p></div>
                       </div>
-                      <span className="text-[10px] text-amber-200">ချိတ်ဆက်ရန်ကျန်</span>
+                      <span className={"text-[10px] " + (summaryState === "live" ? "text-lime-200" : "text-amber-200")}>{summaryState === "live" ? "Connected" : "Unavailable"}</span>
                     </div>
                     <div className="flex items-center justify-between gap-3 py-3">
                       <div className="flex items-center gap-3">
                         <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-200/[0.06] text-violet-200"><ShieldCheck size={15} /></span>
-                        <div><p className="text-xs font-medium text-slate-200">Admin permissions</p><p className="mt-1 text-[10px] text-slate-500">Staff roles and access control</p></div>
+                        <div><p className="text-xs font-medium text-slate-200">Admin permissions</p><p className="mt-1 text-[10px] text-slate-500">Server-checked roles, permissions and audit logs</p></div>
                       </div>
-                      <span className="text-[10px] text-amber-200">UI ချိတ်ဆက်ရန်ကျန်</span>
+                      <span className="text-[10px] text-lime-200">{user.roleKey === "super_admin" ? "Super Admin" : "Role based"}</span>
                     </div>
                     <div className="flex items-center justify-between gap-3 py-3 last:pb-0">
                       <div className="flex items-center gap-3">
                         <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-lime-200/[0.06] text-lime-200"><Package size={15} /></span>
-                        <div><p className="text-xs font-medium text-slate-200">Products & Catalogs</p><p className="mt-1 text-[10px] text-slate-500">Existing product management</p></div>
+                        <div><p className="text-xs font-medium text-slate-200">Products & Catalogs</p><p className="mt-1 text-[10px] text-slate-500">Existing product management and signed Store API</p></div>
                       </div>
-                      <span className="text-[10px] text-lime-200">လက်ရှိချိတ်ဆက်ထား</span>
+                      <span className="text-[10px] text-lime-200">Connected</span>
                     </div>
                   </div>
                 </section>
@@ -422,10 +422,10 @@ export default function Home({ user, onLogout }: HomeProps) {
                     <p className="mt-1.5 break-all text-xs font-medium text-slate-200">{user.email}</p>
                     <div className="mt-3 flex items-center gap-2 border-t border-white/[0.06] pt-3">
                       <span className="h-1.5 w-1.5 rounded-full bg-lime-300" />
-                      <span className="text-[10px] text-slate-400">Session authenticated</span>
+                      <span className="text-[10px] text-slate-400">{user.roleKey} · {user.permissions.length} permissions</span>
                     </div>
                   </div>
-                  <p className="mt-4 text-[11px] leading-5 text-slate-500">လက်ရှိ Email/Password Login ကို ဆက်လက်အသုံးပြုထားသည်။ Login စနစ်ကို မပြောင်းလဲထားပါ။</p>
+                  <p className="mt-4 text-[11px] leading-5 text-slate-500">Primary Admin Email/Password Login ကို ထိန်းသိမ်းထားပြီး Staff များအတွက် သီးခြား Email/Password Login ထည့်သွင်းထားသည်။</p>
                 </section>
               </div>
 
