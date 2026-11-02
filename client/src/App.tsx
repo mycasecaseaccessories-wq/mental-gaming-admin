@@ -73,7 +73,7 @@ function AppContent() {
   useEffect(() => {
     if (authState === "signed-in" && location === "/login") {
       setLocation("/dashboard");
-    } else if (authState === "signed-out" && (["/dashboard", "/products", "/catalogs", "/orders", "/customers", "/transactions", "/topups"].includes(location))) {
+    } else if (authState === "signed-out" && (["/dashboard", "/products", "/catalogs", "/orders", "/customers", "/transactions", "/topups", "/staff"].includes(location))) {
       setLocation("/login");
     }
   }, [authState, location, setLocation]);
@@ -115,7 +115,7 @@ function AppContent() {
     );
   }
 
-  const knownPath = ["/", "/login", "/dashboard", "/products", "/catalogs", "/orders", "/customers", "/transactions", "/topups"].includes(location);
+  const knownPath = ["/", "/login", "/dashboard", "/products", "/catalogs", "/orders", "/customers", "/transactions", "/topups", "/staff"].includes(location);
   if (!knownPath) {
     return (
       <StatusPage
