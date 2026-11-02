@@ -17,8 +17,8 @@ const panel = "rounded-2xl border border-white/[0.07] bg-[#101827]/75";
 const field = "h-10 w-full rounded-lg border border-white/10 bg-[#0b111d] px-3 text-sm text-slate-200 outline-none focus:border-cyan-200/40";
 const button = "inline-flex h-10 items-center gap-2 rounded-lg bg-cyan-200 px-4 text-xs font-semibold text-slate-950 disabled:opacity-50";
 
-export default function StaffAccess() {
-  const [tab, setTab] = useState<"staff" | "roles" | "activity">("staff");
+export default function StaffAccess({ initialTab = "staff" }: { initialTab?: "staff" | "roles" | "activity" }) {
+  const [tab, setTab] = useState<"staff" | "roles" | "activity">(initialTab);
   const [staff, setStaff] = useState<Staff[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [permissions, setPermissions] = useState<Permission[]>([]);
