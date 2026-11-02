@@ -87,8 +87,8 @@ export default function StaffAccess({ initialTab = "staff" }: { initialTab?: "st
       });
       const body = await response.json().catch(() => ({})) as { error?: string };
       if (!response.ok) throw new Error(body.error || "Permission သိမ်းဆည်း၍ မရပါ။");
-      setNotice(role.display_name + " Permission များကို သိမ်းဆည်းပြီးပါပြီ။");
       await load();
+      setNotice(role.display_name + " Permission များကို သိမ်းဆည်းပြီးပါပြီ။");
     } catch (e) { setError(e instanceof Error ? e.message : "Permission သိမ်းဆည်း၍ မရပါ။"); }
     finally { setSavingRole(""); }
   }
