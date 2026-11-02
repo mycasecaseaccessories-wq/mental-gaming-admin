@@ -61,7 +61,7 @@ GitHub Actions run #127 passed frozen-lockfile install, formatting, TypeScript t
 
 ### Preview verification limits
 
-The Admin A preview deployment reached READY for the Admin roadmap branch. Storefront and API preview deployments also reached READY for the consolidated security branch. The API project's Vercel build emitted `skip-api-build`, so READY does not prove that Vercel compiled or executed the API bundle. The serverless bundle command was separately compiled successfully in an isolated sandbox. A safe API runtime smoke test and review of the API project's Vercel build/ignore configuration remain open.
+The Admin A preview deployment reached READY for the Admin roadmap branch. Storefront and API preview deployments also reached READY for the consolidated security branch. The API project's Vercel build emitted `skip-api-build`, so READY does not prove that Vercel compiled or executed the API bundle. The serverless bundle is now compiled by GitHub CI run #131 and passed. A safe API runtime smoke test and review of the API project's Vercel build/ignore configuration remain open.
 
 ### Phase 1 exit items still open
 
