@@ -3,10 +3,10 @@ import { createHash, createHmac, randomBytes } from "node:crypto";
 import express from "express";
 import type { AddressInfo } from "node:net";
 import { createAdminSession, registerAdminAuthRoutes } from "./adminAuth";
-import { registerAdminProductRoutes } from "./adminProducts";
+import { getProductApiOrigin, registerAdminProductRoutes } from "./adminProducts";
 
 describe("admin product API proxy", () => {
-  const keys = ["MG_ADMIN_EMAIL", "MG_ADMIN_PASSWORD", "MG_ADMIN_SESSION_SECRET", "MG_PRODUCT_API_SECRET"] as const;
+  const keys = ["MG_ADMIN_EMAIL", "MG_ADMIN_PASSWORD", "MG_ADMIN_SESSION_SECRET", "MG_PRODUCT_API_SECRET", "MG_PRODUCT_API_ORIGIN", "VERCEL_ENV"] as const;
   const original = new Map<string, string | undefined>();
   type TestServer = ReturnType<ReturnType<typeof express>["listen"]>;
   let server: TestServer;
@@ -65,6 +65,69 @@ describe("admin product API proxy", () => {
     const body = await response.json() as { csrfToken: string };
     return body.csrfToken;
   }
+
+  it("does not default preview deployments to the production Store API", () => {
+    process.env.VERCEL_ENV = "preview";
+    delete process.env.MG_PRODUCT_API_ORIGIN;
+    expect(getProductApiOrigin()).toBe("");
+  });
+
+  it("returns 503 instead of proxying preview product reads to production", async () => {
+    process.env.VERCEL_ENV = "preview";
+    delete process.env.MG_PRODUCT_API_ORIGIN;
+
+    const previewApp = express();
+    previewApp.use(express.json({ limit: "32kb" }));
+    registerAdminAuthRoutes(previewApp);
+    let previewUpstreamCalls = 0;
+    registerAdminProductRoutes(previewApp, {
+      fetcher: async () => {
+        previewUpstreamCalls += 1;
+        return new Response(JSON.stringify({ ok: true }), { status: 200 });
+      },
+    });
+    const previewServer = previewApp.listen(0, "127.0.0.1");
+    await new Promise<void>((resolve) => previewServer.once("listening", resolve));
+    const address = previewServer.address() as AddressInfo;
+    try {
+      const response = await fetch(`http://127.0.0.1:${address.port}/api/admin/products?page=1`, {
+        headers: { Cookie: sessionCookie },
+      });
+      expect(response.status).toBe(503);
+      expect(previewUpstreamCalls).toBe(0);
+    } finally {
+      await new Promise<void>((resolve, reject) =>
+        previewServer.close((error) => error ? reject(error) : resolve()),
+      );
+    }
+  });
+
+  it("uses an explicitly configured preview Store API origin", () => {
+    process.env.VERCEL_ENV = "preview";
+    process.env.MG_PRODUCT_API_ORIGIN = "https://preview-store-api.example.test";
+    expect(getProductApiOrigin()).toBe("https://preview-store-api.example.test");
+  });
+
+  it("rejects non-HTTPS or non-origin preview API URLs", () => {
+    process.env.VERCEL_ENV = "preview";
+    process.env.MG_PRODUCT_API_ORIGIN = "http://preview-store-api.example.test";
+    expect(getProductApiOrigin()).toBe("");
+
+    process.env.MG_PRODUCT_API_ORIGIN = "https://preview-store-api.example.test/api";
+    expect(getProductApiOrigin()).toBe("");
+  });
+
+  it("uses the production Store API default only in production", () => {
+    process.env.VERCEL_ENV = "production";
+    delete process.env.MG_PRODUCT_API_ORIGIN;
+    expect(getProductApiOrigin()).toBe("https://mental-gaming-store.vercel.app");
+  });
+
+  it("fails closed for local development without an explicit Store API origin", () => {
+    delete process.env.VERCEL_ENV;
+    delete process.env.MG_PRODUCT_API_ORIGIN;
+    expect(getProductApiOrigin()).toBe("");
+  });
 
   it("does not call the store API without a valid admin session", async () => {
     const response = await fetch(`${baseUrl}/api/admin/products?page=1`);
