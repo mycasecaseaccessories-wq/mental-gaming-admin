@@ -116,9 +116,10 @@ export default function StaffAccess({ initialTab = "staff" }: { initialTab?: "st
         const passwordBody = await passwordResponse.json().catch(() => ({})) as { error?: string };
         if (!passwordResponse.ok) throw new Error(passwordBody.error || "Staff password သတ်မှတ်၍ မရပါ။");
       }
-      setNotice(newPassword ? "Staff အကောင့်နှင့် Login Password ကို သိမ်းဆည်းပြီးပါပြီ။" : "Staff အချက်အလက်ကို သိမ်းဆည်းပြီးပါပြီ။");
+      const passwordWasSet = Boolean(newPassword);
       resetForm();
       await load();
+      setNotice(passwordWasSet ? "Staff အကောင့်နှင့် Login Password ကို သိမ်းဆည်းပြီးပါပြီ။" : "Staff အချက်အလက်ကို သိမ်းဆည်းပြီးပါပြီ။");
     } catch (e) { setError(e instanceof Error ? e.message : "Staff သိမ်းဆည်း၍ မရပါ။"); }
     finally { setSaving(false); }
   }
@@ -140,7 +141,7 @@ export default function StaffAccess({ initialTab = "staff" }: { initialTab?: "st
     {tab==="staff" && <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
       <section className={panel+" overflow-hidden"}>
         <div className="border-b border-white/[0.07] px-4 py-4"><h3 className="text-sm font-semibold text-white">Staff Accounts</h3><p className="mt-1 text-xs text-slate-500">{staff.length} records · Admin Supabase</p></div>
-        {loading?<p className="p-8 text-center text-sm text-slate-500">ဖတ်ရှုနေသည်…</p>:staff.length===0?<p className="p-8 text-center text-sm text-slate-500">Staff စာရင်း မရှိသေးပါ။</p>:<div className="overflow-x-auto"><table className="w-full min-w-[600px] text-left text-xs"><thead className="border-b border-white/[0.06] text-[10px] uppercase text-slate-500"><tr><th className="px-4 py-3">Account</th><th className="px-4 py-3">Role</th><th className="px-4 py-3">Login</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Action</th></tr></thead><tbody className="divide-y divide-white/[0.05]">{staff.map(s=><tr key={s.email} className="text-slate-300"><td className="px-4 py-3"><p>{s.display_name||"—"}</p><p className="mt-1 break-all text-[10px] text-slate-500">{s.email}</p></td><td className="px-4 py-3">{s.role_name}</td><td className="px-4 py-3 text-amber-200">{s.access_state==="pending_auth"?"Pending login setup":s.access_state}</td><td className="px-4 py-3">{s.is_active?"Enabled":"Disabled"}</td><td className="px-4 py-3"><button type="button" onClick={()=>edit(s)} className="text-cyan-200 underline underline-offset-2">Edit</button></td></tr>)}</tbody></table></div>}
+        {loading?<p className="p-8 text-center text-sm text-slate-500">ဖတ်ရှုနေသည်…</p>:staff.length===0?<p className="p-8 text-center text-sm text-slate-500">Staff စာရင်း မရှိသေးပါ။</p>:<div className="overflow-x-auto"><table className="w-full min-w-[600px] text-left text-xs"><thead className="border-b border-white/[0.06] text-[10px] uppercase text-slate-500"><tr><th className="px-4 py-3">Account</th><th className="px-4 py-3">Role</th><th className="px-4 py-3">Login</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Action</th></tr></thead><tbody className="divide-y divide-white/[0.05]">{staff.map(s=><tr key={s.email} className="text-slate-300"><td className="px-4 py-3"><p>{s.display_name||"—"}</p><p className="mt-1 break-all text-[10px] text-slate-500">{s.email}</p></td><td className="px-4 py-3">{s.role_name}</td><td className="px-4 py-3 text-amber-200">{s.access_state==="pending_auth"?"Pending login setup":s.access_state}</td><td className="px-4 py-3">{s.is_active?"Enabled":"Disabled"}</td><td className="px-4 py-3">{s.role_key==="super_admin"?<span className="text-[10px] text-amber-200">Protected</span>:<button type="button" onClick={()=>edit(s)} className="text-cyan-200 underline underline-offset-2">Edit</button>}</td></tr>)}</tbody></table></div>}
       </section>
       <form onSubmit={save} className={panel+" h-fit p-4"}>
         <h3 className="text-sm font-semibold text-white">{editing?"Staff ပြင်ဆင်ရန်":"Staff အသစ်ထည့်ရန်"}</h3>
