@@ -139,7 +139,7 @@ export function registerAdminStaffRoutes(app: Express) {
       res.status(403).json({ error: "လုံခြုံရေးအတည်ပြုမှု မအောင်မြင်ပါ။" });
       return;
     }
-    const staffEmail = decodeURIComponent(req.params.email).trim().toLowerCase();
+    const staffEmail = req.params.email.trim().toLowerCase();
     const password = typeof req.body?.password === "string" ? req.body.password : "";
     if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(staffEmail) || password.length < 12 || password.length > 128) {
       res.status(400).json({ error: "Staff Email မှန်ကန်ရန်နှင့် Password အနည်းဆုံး ၁၂ လုံးရှိရန် လိုအပ်ပါသည်။" });
