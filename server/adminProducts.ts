@@ -68,6 +68,18 @@ function resolveServicePath(method: PortalMethod, originalUrl: string): string |
     }
     return null;
   }
+  const readOnlyQueryRoutes: Record<string, ReadonlySet<string>> = {
+    summary: new Set(),
+    orders: new Set(["page", "status"]),
+    users: new Set(["page", "q"]),
+    transactions: new Set(["page", "type", "status"]),
+    topups: new Set(["page"]),
+  };
+  if (["summary", "orders", "users", "transactions", "topups"].includes(path.slice(1)) && method === "GET") {
+    const allowed = readOnlyQueryRoutes[path.slice(1)];
+    if (allowed && (!hasQuery || hasOnlyQueryKeys(search, allowed))) return `${SERVICE_PREFIX}${suffix}`;
+    return null;
+  }
   if (path === "/catalogs") {
     if (method === "GET" && !hasQuery) return `${SERVICE_PREFIX}${suffix}`;
     return null;
@@ -179,6 +191,11 @@ export function registerAdminProductRoutes(app: Express, options: ProductProxyOp
     fetcher: options.fetcher ?? fetch,
   };
   const router = Router();
+  router.get("/summary", (req, res) => void sendPortalRequest(req, res, "GET", resolvedOptions));
+  router.get("/orders", (req, res) => void sendPortalRequest(req, res, "GET", resolvedOptions));
+  router.get("/users", (req, res) => void sendPortalRequest(req, res, "GET", resolvedOptions));
+  router.get("/transactions", (req, res) => void sendPortalRequest(req, res, "GET", resolvedOptions));
+  router.get("/topups", (req, res) => void sendPortalRequest(req, res, "GET", resolvedOptions));
   router.get("/products", (req, res) => void sendPortalRequest(req, res, "GET", resolvedOptions));
   router.post("/products", (req, res) => void sendPortalRequest(req, res, "POST", resolvedOptions));
   router.patch("/products/:id", (req, res) => void sendPortalRequest(req, res, "PATCH", resolvedOptions));
