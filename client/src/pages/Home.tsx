@@ -31,8 +31,9 @@ import Orders from "@/pages/Orders";
 import Customers from "@/pages/Customers";
 import Transactions from "@/pages/Transactions";
 import Topups from "@/pages/Topups";
+import StaffAccess from "@/pages/StaffAccess";
 
-function isDashboardRoute(path: string): boolean { return !["/products", "/catalogs", "/orders", "/customers", "/transactions", "/topups"].includes(path); }
+function isDashboardRoute(path: string): boolean { return !["/products", "/catalogs", "/orders", "/customers", "/transactions", "/topups", "/staff"].includes(path); }
 
 type HomeProps = {
   user: AdminUser;
@@ -69,8 +70,8 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     label: "စနစ်နှင့် လုံခြုံရေး",
     items: [
       { label: "Analytics", icon: ChartNoAxesCombined, available: false },
-      { label: "Staff & Roles", icon: ShieldCheck, available: false },
-      { label: "Activity Logs", icon: Activity, available: false },
+      { label: "Staff & Roles", href: "/staff", icon: ShieldCheck, available: true },
+      { label: "Activity Logs", href: "/staff", icon: Activity, available: true },
       { label: "Settings", icon: Settings2, available: false },
     ],
   },
@@ -174,8 +175,9 @@ export default function Home({ user, onLogout }: HomeProps) {
   const isCustomersPage = location === "/customers";
   const isTransactionsPage = location === "/transactions";
   const isTopupsPage = location === "/topups";
+  const isStaffPage = location === "/staff";
   const isDashboardPage = isDashboardRoute(location);
-  const pageTitle = isProductsPage ? "Products" : isCatalogsPage ? "Catalogs & Images" : isOrdersPage ? "Orders" : isCustomersPage ? "Customers" : isTransactionsPage ? "Transactions" : isTopupsPage ? "Pending Top-ups" : "Dashboard";
+  const pageTitle = isProductsPage ? "Products" : isCatalogsPage ? "Catalogs & Images" : isOrdersPage ? "Orders" : isCustomersPage ? "Customers" : isTransactionsPage ? "Transactions" : isTopupsPage ? "Pending Top-ups" : isStaffPage ? "Staff & Roles" : "Dashboard";
 
   async function handleLogout() {
     if (loggingOut) return;
@@ -312,6 +314,8 @@ export default function Home({ user, onLogout }: HomeProps) {
             <Transactions />
           ) : isTopupsPage ? (
             <Topups />
+          ) : isStaffPage ? (
+            <StaffAccess />
           ) : (
             <>
               <section className="mb-7 flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
