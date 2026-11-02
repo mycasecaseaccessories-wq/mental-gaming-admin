@@ -203,8 +203,25 @@ export default function Home({ user, onLogout }: HomeProps) {
     }
   }
 
+  const requiredPagePermission = location === "/products" ? "products.view"
+    : location === "/catalogs" ? "catalogs.view"
+    : location === "/orders" ? "orders.view"
+    : location === "/customers" ? "customers.view"
+    : location === "/transactions" ? "transactions.view"
+    : location === "/topups" ? "topups.view"
+    : location === "/staff" ? "staff.manage"
+    : location === "/activity" ? "audit.view"
+    : location === "/wallet" ? "wallet.view"
+    : location === "/analytics" ? "analytics.view"
+    : location === "/settings" || location === "/gateways" ? "settings.view"
+    : "dashboard.view";
+
   function closeMobileNav() {
     setMobileNavOpen(false);
+  }
+
+  if (!user.permissions?.includes(requiredPagePermission)) {
+    return <main className="status-page flex min-h-screen items-center justify-center px-5 py-10 text-white"><section className="w-full max-w-md rounded-3xl border border-white/10 bg-[#111827]/90 p-8 text-center"><h1 className="text-xl font-semibold">ဝင်ရောက်ခွင့် မရှိပါ</h1><p className="mt-3 text-sm leading-6 text-slate-400">ဤစာမျက်နှာကို ကြည့်ရှုရန် လိုအပ်သော Permission မရှိပါ။ Admin တာဝန်ရှိသူထံ ဆက်သွယ်ပါ။</p></section></main>;
   }
 
   return (
