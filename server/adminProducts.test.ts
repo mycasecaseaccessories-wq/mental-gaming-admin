@@ -108,6 +108,15 @@ describe("admin product API proxy", () => {
     expect(getProductApiOrigin()).toBe("https://preview-store-api.example.test");
   });
 
+  it("rejects non-HTTPS or non-origin preview API URLs", () => {
+    process.env.VERCEL_ENV = "preview";
+    process.env.MG_PRODUCT_API_ORIGIN = "http://preview-store-api.example.test";
+    expect(getProductApiOrigin()).toBe("");
+
+    process.env.MG_PRODUCT_API_ORIGIN = "https://preview-store-api.example.test/api";
+    expect(getProductApiOrigin()).toBe("");
+  });
+
   it("uses the production Store API default only in production", () => {
     process.env.VERCEL_ENV = "production";
     delete process.env.MG_PRODUCT_API_ORIGIN;
