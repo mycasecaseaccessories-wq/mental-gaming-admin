@@ -38,8 +38,9 @@ All endpoints require the existing Admin A session:
 - `GET /api/admin/access/roles` — requires `roles.manage`
 - `GET /api/admin/access/activity?limit=150` — requires `audit.view`
 - `POST /api/admin/access/staff` — requires `staff.manage` and CSRF
+- `POST /api/admin/access/roles/:roleKey` — requires `roles.manage` and CSRF; updates permissions for non-super-admin roles only.
 
-The initial UI provides staff roster maintenance, a read-only role/permission matrix, and activity log viewing. Permission matrix editing is intentionally not enabled yet.
+The UI provides staff roster maintenance, editable permissions for admin/manager/staff/viewer roles, a protected read-only super-admin permission set, and activity log viewing. Role changes are written with their audit record in the same database transaction.
 
 ## Safety boundaries
 
