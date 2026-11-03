@@ -2,6 +2,7 @@ import express from "express";
 import path from "node:path";
 import { registerAdminAuthRoutes } from "./server/adminAuth.js";
 import { registerAdminProductRoutes } from "./server/adminProducts.js";
+import { registerAdminStaffRoutes } from "./server/adminStaff.js";
 
 export function createApp(publicDirectory = path.resolve(process.cwd(), "public")) {
   const app = express();
@@ -20,8 +21,9 @@ export function createApp(publicDirectory = path.resolve(process.cwd(), "public"
   app.get("/api/health", (_req, res) => res.status(200).json({ status: "ok" }));
   registerAdminAuthRoutes(app);
   registerAdminProductRoutes(app);
+  registerAdminStaffRoutes(app);
 
-  app.get(["/", "/login", "/dashboard", "/products", "/catalogs"], (_req, res) => {
+  app.get(["/", "/login", "/dashboard", "/products", "/catalogs", "/orders", "/customers", "/transactions", "/topups", "/staff", "/activity", "/wallet", "/analytics", "/settings", "/gateways"], (_req, res) => {
     res.setHeader("Cache-Control", "no-cache");
     res.sendFile(path.join(publicDirectory, "index.html"));
   });

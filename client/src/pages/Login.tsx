@@ -54,7 +54,7 @@ export default function Login({ onLogin }: LoginProps) {
             </div>
             <h1 className="text-3xl font-semibold tracking-tight">Admin အကောင့်ဝင်ရန်</h1>
             <p className="mt-2 text-sm leading-6 text-slate-400">
-              သတ်မှတ်ထားသော Gmail လိပ်စာနှင့် ဒီ website အတွက် သီးခြား password ကိုသုံးပါ။
+              ခွင့်ပြုထားသော Admin Email လိပ်စာနှင့် ဒီ website အတွက် သီးခြား password ကိုသုံးပါ။
             </p>
           </div>
 

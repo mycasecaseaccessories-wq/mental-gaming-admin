@@ -5,6 +5,8 @@ import type { AddressInfo } from "node:net";
 import {
   createAdminSession,
   passwordMatches,
+  hashStaffPassword,
+  staffPasswordMatches,
   registerAdminAuthRoutes,
   verifyAdminSession,
 } from "./adminAuth";
@@ -75,8 +77,26 @@ describe("admin authentication", () => {
     expect(await verifyAdminSession(token, sessionSecret)).toEqual({
       email: "owner@example.com",
       role: "admin",
+      roleKey: "super_admin",
     });
     expect(await verifyAdminSession(token, randomBytes(32).toString("base64url"))).toBeNull();
+  });
+
+  it("hashes staff passwords with unique salts and verifies them safely", async () => {
+    const first = await hashStaffPassword("Staff-Password-For-Tests-2026!");
+    const second = await hashStaffPassword("Staff-Password-For-Tests-2026!");
+    expect(first.salt).not.toBe(second.salt);
+    expect(await staffPasswordMatches("Staff-Password-For-Tests-2026!", first.hash, first.salt)).toBe(true);
+    expect(await staffPasswordMatches("Wrong-Staff-Password-2026!", first.hash, first.salt)).toBe(false);
+  });
+
+  it("issues staff sessions with a staff role claim", async () => {
+    const token = await createAdminSession("staff@example.com", sessionSecret, "manager");
+    expect(await verifyAdminSession(token, sessionSecret)).toEqual({
+      email: "staff@example.com",
+      role: "staff",
+      roleKey: "manager",
+    });
   });
 
   it("issues a signed no-store CSRF token without requiring a browser cookie", async () => {
@@ -152,12 +172,13 @@ describe("admin authentication", () => {
     expect(sessionSetCookie).toContain("HttpOnly");
     expect(sessionSetCookie).toContain("Secure");
     expect(sessionSetCookie).toContain("SameSite=None");
-    expect(loginBody).toEqual({ user: { email: "owner@example.com", role: "admin" } });
+    expect(loginBody.user).toMatchObject({ email: "owner@example.com", role: "admin", roleKey: "super_admin" });
+    expect(loginBody.user.permissions).toContain("dashboard.view");
     expect(JSON.stringify(loginBody)).not.toContain("Test-only-Site-Password-123!");
 
     const me = await fetch(`${baseUrl}/api/admin-auth/me`, { headers: { Cookie: cookie } });
     expect(me.status).toBe(200);
-    expect(await me.json()).toEqual({ user: { email: "owner@example.com", role: "admin" } });
+    expect(await me.json()).toMatchObject({ user: { email: "owner@example.com", role: "admin", roleKey: "super_admin" } });
 
     const logout = await fetch(`${baseUrl}/api/admin-auth/logout`, {
       method: "POST",

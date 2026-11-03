@@ -1,6 +1,7 @@
 import { createHash, createHmac, randomBytes } from "node:crypto";
 import { Router, type Express, type Request, type Response } from "express";
 import { getAdminSessionForRequest, isAdminCsrfRequestValid } from "./adminAuth.js";
+import { getAdminAccessForRequest } from "./adminStaff.js";
 
 const PRODUCTION_PRODUCT_API_ORIGIN = "https://mental-gaming-store.vercel.app";
 
@@ -68,6 +69,20 @@ function resolveServicePath(method: PortalMethod, originalUrl: string): string |
     }
     return null;
   }
+  const readOnlyQueryRoutes: Record<string, ReadonlySet<string>> = {
+    summary: new Set(),
+    orders: new Set(["page", "status"]),
+    users: new Set(["page", "q"]),
+    transactions: new Set(["page", "type", "status"]),
+    topups: new Set(["page"]),
+    analytics: new Set(["period"]),
+    gateways: new Set(),
+  };
+  if (["summary", "orders", "users", "transactions", "topups", "analytics", "gateways"].includes(path.slice(1)) && method === "GET") {
+    const allowed = readOnlyQueryRoutes[path.slice(1)];
+    if (allowed && (!hasQuery || hasOnlyQueryKeys(search, allowed))) return `${SERVICE_PREFIX}${suffix}`;
+    return null;
+  }
   if (path === "/catalogs") {
     if (method === "GET" && !hasQuery) return `${SERVICE_PREFIX}${suffix}`;
     return null;
@@ -85,6 +100,22 @@ function resolveServicePath(method: PortalMethod, originalUrl: string): string |
   return null;
 }
 
+function requiredPortalPermission(method: PortalMethod, originalUrl: string): string | null {
+  const path = originalUrl.split("?", 1)[0].replace(ADMIN_PREFIX, "");
+  if (path === "/summary") return "dashboard.view";
+  if (path === "/analytics") return "analytics.view";
+  if (path === "/gateways") return "settings.view";
+  if (path === "/orders") return "orders.view";
+  if (path === "/users") return "customers.view";
+  if (path === "/transactions") return "transactions.view";
+  if (path === "/topups") return "topups.view";
+  if (path === "/products") return method === "GET" ? "products.view" : "products.manage";
+  if (path.startsWith("/products/") && /^[a-f0-9]{24}$/i.test(path.slice(10))) return "products.manage";
+  if (path === "/catalogs") return "catalogs.view";
+  if (path.startsWith("/catalogs/") && /^[a-f0-9]{24}$/i.test(path.slice(10))) return "catalogs.manage";
+  if (path === "/media") return "products.manage";
+  return null;
+}
 function errorForStatus(status: number): string {
   if (status === 400) return "ထည့်သွင်းထားသော အချက်အလက် သို့မဟုတ် ပုံကို စစ်ဆေးပြီး ထပ်ကြိုးစားပါ။";
   if (status === 404) return "ရွေးထားသော အုပ်စု၊ ကုန်ပစ္စည်း သို့မဟုတ် ပုံကို ရှာမတွေ့ပါ။";
@@ -114,6 +145,19 @@ async function sendPortalRequest(
   const apiPath = resolveServicePath(method, req.originalUrl);
   if (!apiPath) {
     res.status(404).json({ error: "စာမျက်နှာ မတွေ့ပါ။" });
+    return;
+  }
+
+  try {
+    const access = await getAdminAccessForRequest(req);
+    const permission = requiredPortalPermission(method, req.originalUrl);
+    if (!access || !access.is_active || access.access_state !== "active" ||
+        !permission || !access.permissions?.includes(permission)) {
+      res.status(403).json({ error: "ဤလုပ်ဆောင်ချက်အတွက် ခွင့်ပြုချက် မရှိပါ။" });
+      return;
+    }
+  } catch {
+    res.status(503).json({ error: "Admin permission service ကို ယာယီအသုံးမပြုနိုင်ပါ။" });
     return;
   }
 
@@ -179,6 +223,13 @@ export function registerAdminProductRoutes(app: Express, options: ProductProxyOp
     fetcher: options.fetcher ?? fetch,
   };
   const router = Router();
+  router.get("/summary", (req, res) => void sendPortalRequest(req, res, "GET", resolvedOptions));
+  router.get("/orders", (req, res) => void sendPortalRequest(req, res, "GET", resolvedOptions));
+  router.get("/users", (req, res) => void sendPortalRequest(req, res, "GET", resolvedOptions));
+  router.get("/transactions", (req, res) => void sendPortalRequest(req, res, "GET", resolvedOptions));
+  router.get("/topups", (req, res) => void sendPortalRequest(req, res, "GET", resolvedOptions));
+  router.get("/analytics", (req, res) => void sendPortalRequest(req, res, "GET", resolvedOptions));
+  router.get("/gateways", (req, res) => void sendPortalRequest(req, res, "GET", resolvedOptions));
   router.get("/products", (req, res) => void sendPortalRequest(req, res, "GET", resolvedOptions));
   router.post("/products", (req, res) => void sendPortalRequest(req, res, "POST", resolvedOptions));
   router.patch("/products/:id", (req, res) => void sendPortalRequest(req, res, "PATCH", resolvedOptions));

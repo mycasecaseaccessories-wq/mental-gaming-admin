@@ -1,6 +1,8 @@
 export type AdminUser = {
   email: string;
-  role: "admin";
+  role: "admin" | "staff";
+  roleKey: string;
+  permissions: string[];
 };
 
 export class AdminAuthError extends Error {
