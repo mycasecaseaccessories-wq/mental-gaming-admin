@@ -141,7 +141,7 @@ export function registerAdminStaffRoutes(app: Express) {
     }
     const staffEmail = req.params.email.trim().toLowerCase();
     const password = typeof req.body?.password === "string" ? req.body.password : "";
-    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(staffEmail) || password.length < 12 || password.length > 128) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(staffEmail) || password.length < 12 || password.length > 128) {
       res.status(400).json({ error: "Staff Email မှန်ကန်ရန်နှင့် Password အနည်းဆုံး ၁၂ လုံးရှိရန် လိုအပ်ပါသည်။" });
       return;
     }
