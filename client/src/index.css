@@ -42,6 +42,9 @@ h1, h2, h3, .brand-title { font-family: "Space Grotesk", Inter, "Noto Sans Myanm
 .mg-sidebar-version { display:flex;align-items:center;gap:8px;margin:19px 8px 0;color:#687080;font-size:9px;letter-spacing:.16em; }
 .mg-live-dot { display:inline-block;width:7px;height:7px;flex:none;border-radius:50%;background:#b7cf75;box-shadow:0 0 10px rgba(183,207,117,.5); }
 .mg-main { min-width:0; }
+.mg-tablet-menu-button { width:38px;height:38px;flex:none;align-items:center;justify-content:center;border:1px solid rgba(214,173,85,.2);border-radius:11px;color:#dfc27e;background:rgba(214,173,85,.06); }
+.mg-tablet-backdrop { position:fixed;z-index:39;inset:0;width:100%;height:100%;border:0;background:rgba(0,0,0,.62);backdrop-filter:blur(3px); }
+.mg-tablet-drawer { position:fixed;z-index:40;top:0;bottom:0;left:0;width:min(310px,82vw);flex-direction:column;padding:25px 18px 20px;border-right:1px solid rgba(214,173,85,.16);background:linear-gradient(180deg,#0d111b 0%,#0a0d15 100%);box-shadow:20px 0 60px rgba(0,0,0,.35); }
 .mg-topbar { position:sticky;top:0;z-index:20;display:flex;min-height:78px;align-items:center;justify-content:space-between;gap:12px;padding:0 34px;border-bottom:1px solid rgba(255,255,255,.07);background:rgba(9,11,18,.86);backdrop-filter:blur(16px); }
 .mg-breadcrumb { color:#727988;font-size:9px;font-weight:600;letter-spacing:.14em; }
 .mg-breadcrumb span { padding:0 7px;color:#444b58; }
@@ -97,6 +100,32 @@ h1, h2, h3, .brand-title { font-family: "Space Grotesk", Inter, "Noto Sans Myanm
 .mg-drawer-close { display:flex;align-items:center;gap:7px;margin-left:auto;color:#9299a6;font-size:11px; }
 .mg-drawer-email { margin:12px 0;color:#e4dfd4;font-size:12px;overflow-wrap:anywhere; }
 .mg-drawer-logout { display:flex;width:100%;align-items:center;gap:9px;padding:12px;border:1px solid rgba(248,113,113,.18);border-radius:11px;color:#fca5a5;background:rgba(248,113,113,.045);font-size:12px; }
-@media (max-width:1023px) { .mg-admin-shell { display:block; } .mg-topbar { min-height:65px;padding:0 20px; } .mg-content { padding:24px 20px 105px; } }
-@media (max-width:640px) { .mg-topbar { min-height:61px;padding:0 15px; } .mg-content { padding:19px 15px 105px; } .mg-welcome-panel { min-height:180px;padding:25px 21px; } .mg-welcome-status { position:absolute;right:15px;bottom:14px;padding:7px 9px;font-size:8px; } .mg-welcome-panel p { max-width:270px;font-size:12px; } .mg-section-heading { margin-top:25px; } .mg-updated-label { display:none; } .mg-card-value { font-size:17px; } }
+@media (min-width:768px) and (max-width:1023px) {
+  .mg-admin-shell { display:block; }
+  .mg-topbar { min-height:68px;padding:0 24px; }
+  .mg-content { padding:28px 24px 40px; }
+  .mg-welcome-panel { min-height:180px;padding:28px; }
+  .mg-status-card { padding:18px; }
+}
+@media (max-width:767px) {
+  .mg-admin-shell { display:block; }
+  .mg-topbar { min-height:61px;padding:0 15px; }
+  .mg-content { padding:19px 15px calc(104px + env(safe-area-inset-bottom)); }
+  .mg-welcome-panel { min-height:180px;padding:25px 21px 62px; }
+  .mg-welcome-status { position:absolute;right:15px;bottom:14px;padding:7px 9px;font-size:8px; }
+  .mg-welcome-panel p { max-width:270px;font-size:12px; }
+  .mg-section-heading { margin-top:25px; }
+  .mg-updated-label { display:none; }
+  .mg-card-value { font-size:17px;overflow-wrap:anywhere; }
+  .mg-mobile-page-title { padding:17px 15px 0; }
+  .mg-mobile-nav { padding-bottom:max(9px,env(safe-area-inset-bottom)); }
+}
+@media (max-width:380px) {
+  .mg-mobile-brand .mg-brand-name { font-size:9px;letter-spacing:.09em; }
+  .mg-user-chip { padding-right:2px; }
+  .mg-icon-button { width:34px;height:34px; }
+  .mg-logout-button { width:34px;padding:0;justify-content:center; }
+  .mg-content { padding-right:12px;padding-left:12px; }
+  .mg-welcome-panel h1 { font-size:27px; }
+}
 @media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important; } }
