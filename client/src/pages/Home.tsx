@@ -1,14 +1,20 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import {
+  Activity,
+  Bell,
+  ChevronDown,
   CircleUserRound,
   Database,
   Gamepad2,
   LayoutDashboard,
   Layers,
   LogOut,
+  Menu,
   Package,
+  Search,
   ShieldCheck,
+  X,
 } from "lucide-react";
 import type { AdminUser } from "@/lib/adminAuth";
 import Products from "@/pages/Products";
@@ -19,12 +25,21 @@ type HomeProps = {
   onLogout: () => Promise<void>;
 };
 
+const navigation = [
+  { href: "/dashboard", label: "အနှစ်ချုပ်", en: "Overview", icon: LayoutDashboard, key: "dashboard" },
+  { href: "/products", label: "ကုန်ပစ္စည်းများ", en: "Products", icon: Package, key: "products" },
+  { href: "/catalogs", label: "အုပ်စုနှင့် ပုံများ", en: "Catalogs & Media", icon: Layers, key: "catalogs" },
+];
+
 export default function Home({ user, onLogout }: HomeProps) {
   const [location] = useLocation();
   const [loggingOut, setLoggingOut] = useState(false);
   const [logoutError, setLogoutError] = useState("");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isProductsPage = location === "/products";
   const isCatalogsPage = location === "/catalogs";
+  const activeKey = isProductsPage ? "products" : isCatalogsPage ? "catalogs" : "dashboard";
+  const pageTitle = navigation.find((item) => item.key === activeKey)?.label ?? "အနှစ်ချုပ်";
 
   async function handleLogout() {
     if (loggingOut) return;
@@ -40,138 +55,171 @@ export default function Home({ user, onLogout }: HomeProps) {
   }
 
   const navLinkClass = (active: boolean) =>
-    `nav-entry flex items-center gap-3 rounded-xl border px-3 py-3 text-sm font-medium transition ${active
-      ? "border-cyan-300/15 bg-cyan-300/[0.08] text-cyan-100"
-      : "border-transparent text-slate-400 hover:border-white/8 hover:bg-white/[0.035] hover:text-slate-200"}`;
+    `mg-nav-entry group flex items-center gap-3 rounded-xl border px-3.5 py-3 text-sm font-medium transition-all duration-200 ${
+      active
+        ? "border-amber-300/20 bg-amber-300/[0.09] text-amber-100 shadow-[inset_3px_0_0_#d6ad55]"
+        : "border-transparent text-slate-400 hover:border-white/8 hover:bg-white/[0.04] hover:text-slate-100"
+    }`;
+
+  const navItems = navigation.map((item) => {
+    const Icon = item.icon;
+    const active = activeKey === item.key;
+    return (
+      <Link
+        key={item.key}
+        href={item.href}
+        onClick={() => setMobileMenuOpen(false)}
+        className={navLinkClass(active)}
+        aria-current={active ? "page" : undefined}
+      >
+        <Icon size={18} strokeWidth={1.8} aria-hidden="true" />
+        <span className="min-w-0 flex-1">{item.label}</span>
+        {active && <span className="h-1.5 w-1.5 rounded-full bg-amber-300 shadow-[0_0_10px_rgba(214,173,85,.7)]" />}
+      </Link>
+    );
+  });
 
   return (
-    <div className="dashboard-shell min-h-screen text-slate-100">
-      <aside className="dashboard-sidebar flex flex-col border-r border-white/8 bg-[#0b101c] px-4 py-5">
-        <div className="flex items-center gap-3 px-2">
-          <div className="brand-mark flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-cyan-300/20 bg-cyan-300/10 text-cyan-200">
-            <Gamepad2 size={22} strokeWidth={1.8} />
-          </div>
+    <div className="mg-admin-shell min-h-screen text-slate-100">
+      <aside className="mg-sidebar hidden lg:flex">
+        <div className="mg-brand-lockup">
+          <div className="mg-brand-icon"><Gamepad2 size={23} strokeWidth={1.7} /></div>
           <div className="min-w-0">
-            <p className="truncate text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-200">MENTAL GAMING</p>
-            <p className="mt-1 text-xs text-slate-500">Admin စီမံခန့်ခွဲမှု</p>
+            <p className="mg-brand-name">MENTAL GAMING</p>
+            <p className="mg-brand-subtitle">ADMIN CONTROL CENTER</p>
           </div>
         </div>
 
-        <div className="mt-10 px-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-600">စနစ်</div>
-        <nav className="mt-3 space-y-1" aria-label="ပင်မမီနူး">
-          <Link href="/dashboard" className={navLinkClass(!isProductsPage && !isCatalogsPage)} aria-current={!isProductsPage && !isCatalogsPage ? "page" : undefined}>
-            <LayoutDashboard size={17} aria-hidden="true" />
-            အနှစ်ချုပ်
-            {!isProductsPage && !isCatalogsPage && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-cyan-200" />}
-          </Link>
-          <Link href="/products" className={navLinkClass(isProductsPage)} aria-current={isProductsPage ? "page" : undefined}>
-            <Package size={17} aria-hidden="true" />
-            ကုန်ပစ္စည်းများ
-            {isProductsPage && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-cyan-200" />}
-          </Link>
-          <Link href="/catalogs" className={navLinkClass(isCatalogsPage)} aria-current={isCatalogsPage ? "page" : undefined}>
-            <Layers size={17} aria-hidden="true" />
-            အုပ်စုနှင့် ပုံများ
-            {isCatalogsPage && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-cyan-200" />}
-          </Link>
-        </nav>
+        <div className="mg-nav-caption">WORKSPACE</div>
+        <nav className="mg-sidebar-nav" aria-label="Admin navigation">{navItems}</nav>
 
-        <div className="mt-auto rounded-2xl border border-white/8 bg-white/[0.025] p-4">
-          <div className="flex items-center gap-2 text-xs font-medium text-slate-300">
-            <span className="h-2 w-2 rounded-full bg-lime-300 shadow-[0_0_10px_rgba(190,242,100,0.45)]" />
-            စီမံခန့်ခွဲသူ အကောင့်အသုံးပြုနေသည်
+        <div className="mg-sidebar-bottom">
+          <div className="mg-security-card">
+            <div className="flex items-center gap-2 text-xs font-semibold text-amber-100">
+              <ShieldCheck size={16} /> Secure admin session
+            </div>
+            <p>ခွင့်ပြုထားသော စီမံခန့်ခွဲသူအကောင့်ဖြင့် ဝင်ထားပါသည်။</p>
           </div>
-          <p className="mt-2 text-xs leading-5 text-slate-500">ကြိုတင်ခွင့်ပြုထားသော အကောင့်အတွက်သာ။</p>
+          <div className="mg-sidebar-version"><span className="mg-live-dot" /> ADMIN PORTAL</div>
         </div>
       </aside>
 
-      <main className="dashboard-main min-w-0">
-        <header className="dashboard-topbar flex min-h-[76px] items-center justify-between border-b border-white/8 px-5 sm:px-8">
-          <div className="flex items-center gap-2 text-sm text-slate-400">
-            {isProductsPage ? <Package size={16} className="text-cyan-200" aria-hidden="true" /> : isCatalogsPage ? <Layers size={16} className="text-cyan-200" aria-hidden="true" /> : <LayoutDashboard size={16} className="text-cyan-200" aria-hidden="true" />}
-            <span>{isProductsPage ? "ကုန်ပစ္စည်းများ" : isCatalogsPage ? "အုပ်စုနှင့် ပုံများ" : "အနှစ်ချုပ်"}</span>
+      <main className="mg-main min-w-0">
+        <header className="mg-topbar">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="mg-mobile-brand lg:hidden">
+              <span className="mg-brand-icon"><Gamepad2 size={19} /></span>
+              <span className="mg-brand-name">MENTAL GAMING</span>
+            </div>
+            <div className="hidden lg:block">
+              <p className="mg-breadcrumb">WORKSPACE <span>/</span> <strong>{pageTitle}</strong></p>
+              <p className="mg-topbar-title">{pageTitle}</p>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="hidden text-right sm:block">
-              <p className="max-w-[220px] truncate text-sm font-medium text-slate-200">{user.email}</p>
-              <p className="mt-1 text-[11px] text-slate-500">စီမံခန့်ခွဲသူ</p>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="mg-session-chip hidden sm:flex"><span className="mg-live-dot" /> Session active</div>
+            <button type="button" className="mg-icon-button" aria-label="Notifications" title="Notifications">
+              <Bell size={17} />
+              <span className="mg-notification-dot" />
+            </button>
+            <div className="mg-user-chip">
+              <span className="mg-avatar"><CircleUserRound size={18} /></span>
+              <span className="hidden min-w-0 text-left sm:block">
+                <span className="block max-w-[170px] truncate text-xs font-semibold text-slate-100">{user.email}</span>
+                <span className="mt-0.5 block text-[10px] text-slate-500">Administrator</span>
+              </span>
+              <ChevronDown size={14} className="hidden text-slate-500 sm:block" />
             </div>
-            <div className="flex h-9 w-9 items-center justify-center rounded-full border border-cyan-200/15 bg-cyan-200/10 text-cyan-100">
-              <CircleUserRound size={18} aria-hidden="true" />
-            </div>
-            <button
-              type="button"
-              onClick={() => void handleLogout()}
-              disabled={loggingOut}
-              className="inline-flex h-9 items-center gap-2 rounded-lg border border-white/10 px-3 text-xs font-medium text-slate-300 transition hover:border-rose-300/30 hover:bg-rose-300/5 hover:text-rose-200 disabled:cursor-wait disabled:opacity-60"
-            >
-              <LogOut size={15} aria-hidden="true" />
-              <span className="hidden sm:inline">ထွက်ရန်</span>
+            <button type="button" onClick={() => void handleLogout()} disabled={loggingOut} className="mg-logout-button" aria-label="Logout">
+              <LogOut size={16} /><span className="hidden sm:inline">ထွက်ရန်</span>
             </button>
           </div>
         </header>
 
-        <div className="mx-auto w-full max-w-6xl px-5 py-8 sm:px-8 sm:py-10">
+        <div className="mg-mobile-page-title lg:hidden">
+          <p className="mg-breadcrumb">WORKSPACE <span>/</span> <strong>{pageTitle}</strong></p>
+          <h1>{pageTitle}</h1>
+        </div>
+
+        <div className="mg-content">
           {isProductsPage ? (
             <Products />
           ) : isCatalogsPage ? (
             <Catalogs />
           ) : (
             <>
-              <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <p className="text-xs font-semibold tracking-wide text-cyan-200/80">စီမံခန့်ခွဲမှု အနှစ်ချုပ်</p>
-                  <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">Mental Gaming</h1>
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">စီမံခန့်ခွဲသူအဖြစ် ဝင်ရောက်ခွင့် အတည်ပြုပြီးပါပြီ။ ဤစာမျက်နှာသည် ဆိုင်မျက်နှာစာနှင့် သီးခြားစီမံခန့်ခွဲရေးနေရာ ဖြစ်သည်။</p>
+              <section className="mg-welcome-panel">
+                <div className="mg-welcome-orb" aria-hidden="true" />
+                <div className="relative z-[1]">
+                  <div className="mg-eyebrow"><Activity size={13} /> MANAGEMENT OVERVIEW</div>
+                  <h1>Welcome back<span>.</span></h1>
+                  <p>သင့်ရဲ့ Mental Gaming Store ကို တစ်နေရာတည်းမှ စီမံခန့်ခွဲနိုင်ပါပြီ။</p>
                 </div>
-                <div className="flex w-fit items-center gap-2 rounded-full border border-lime-300/15 bg-lime-300/[0.06] px-3 py-2 text-xs font-medium text-lime-200">
-                  <ShieldCheck size={15} aria-hidden="true" />
-                  ဝင်ခွင့် အတည်ပြုပြီး
-                </div>
-              </div>
+                <div className="mg-welcome-status"><span className="mg-live-dot" /> SYSTEM ACCESS VERIFIED</div>
+              </section>
 
-              <section className="grid gap-4 md:grid-cols-2" aria-label="စနစ်အခြေအနေ">
-                <article className="overview-card rounded-2xl border border-white/8 bg-[#111827]/80 p-5 sm:p-6">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-sm font-medium text-slate-300">ဝင်ထားသော စီမံခန့်ခွဲသူအကောင့်</p>
-                      <p className="mt-3 break-all text-lg font-semibold text-white">{user.email}</p>
-                      <p className="mt-2 text-xs leading-5 text-slate-500">လက်ရှိ session အတွက် ခွင့်ပြုထားသော အကောင့်။</p>
-                    </div>
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-cyan-200/15 bg-cyan-200/10 text-cyan-200">
-                      <CircleUserRound size={18} aria-hidden="true" />
-                    </span>
+              <section className="mg-section-heading">
+                <div><h2>စနစ်အခြေအနေ</h2><p>လက်ရှိချိတ်ဆက်ထားသော ဝန်ဆောင်မှုများ</p></div>
+                <span className="mg-updated-label">LIVE CONNECTION STATUS</span>
+              </section>
+
+              <section className="grid gap-4 md:grid-cols-2" aria-label="System status">
+                <article className="mg-status-card">
+                  <div className="mg-status-card-top">
+                    <span className="mg-status-icon gold"><CircleUserRound size={19} /></span>
+                    <span className="mg-status-pill"><span className="mg-live-dot" /> VERIFIED</span>
                   </div>
+                  <p className="mg-card-label">စီမံခန့်ခွဲသူအကောင့်</p>
+                  <p className="mg-card-value break-all">{user.email}</p>
+                  <p className="mg-card-description">လက်ရှိအသုံးပြုနေသော ခွင့်ပြုထားသည့် Admin Session</p>
                 </article>
-
-                <article className="overview-card rounded-2xl border border-white/8 bg-[#111827]/80 p-5 sm:p-6">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-sm font-medium text-slate-300">ကုန်ပစ္စည်းစီမံခန့်ခွဲမှု</p>
-                      <p className="mt-3 text-lg font-semibold text-lime-200">ချိတ်ဆက်ပြီး</p>
-                      <p className="mt-2 text-xs leading-5 text-slate-500">ထုတ်ကုန်များကို စာရင်းကြည့်ရှုခြင်း၊ ထည့်သွင်းခြင်းနှင့် ပြင်ဆင်ခြင်းတို့ကို ဆောင်ရွက်နိုင်ပါသည်။</p>
-                    </div>
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-violet-200/15 bg-violet-200/10 text-violet-200">
-                      <Database size={18} aria-hidden="true" />
-                    </span>
+                <article className="mg-status-card">
+                  <div className="mg-status-card-top">
+                    <span className="mg-status-icon blue"><Database size={19} /></span>
+                    <span className="mg-status-pill"><span className="mg-live-dot" /> CONNECTED</span>
                   </div>
+                  <p className="mg-card-label">Product API ချိတ်ဆက်မှု</p>
+                  <p className="mg-card-value">Ready to manage</p>
+                  <p className="mg-card-description">Product နှင့် Catalog စီမံခန့်ခွဲမှုစာမျက်နှာများကို အသုံးပြုနိုင်ပါသည်။</p>
                 </article>
               </section>
 
-              {logoutError && (
-                <p role="alert" className="mt-5 rounded-xl border border-rose-300/20 bg-rose-300/10 px-4 py-3 text-sm text-rose-200">
-                  {logoutError}
-                </p>
-              )}
+              {logoutError && <p role="alert" className="mt-5 rounded-xl border border-rose-300/20 bg-rose-300/10 px-4 py-3 text-sm text-rose-200">{logoutError}</p>}
 
-              <section className="mt-6 rounded-2xl border border-dashed border-white/10 bg-white/[0.018] px-5 py-7 sm:px-6">
-                <p className="text-sm font-medium text-slate-200">ချိတ်ဆက်ထားသော စီမံခန့်ခွဲမှု</p>
-                <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">ကုန်ပစ္စည်းများကို ဘေးဘက်မီနူးမှ စီမံနိုင်ပါသည်။ Orders နှင့် users စာရင်းများကို မချိတ်ဆက်ရသေးသောကြောင့် ၎င်းတို့၏ အချက်အလက်များကို ဤနေရာတွင် ပြသမည်မဟုတ်ပါ။</p>
+              <section className="mg-section-heading mt-9">
+                <div><h2>Quick access</h2><p>နေ့စဉ်စီမံခန့်ခွဲမှုအတွက် အမြန်ဝင်ရောက်ရန်</p></div>
               </section>
+              <section className="grid gap-3 sm:grid-cols-2">
+                <Link href="/products" className="mg-quick-link">
+                  <span className="mg-quick-icon"><Package size={20} /></span>
+                  <span className="min-w-0 flex-1"><strong>ကုန်ပစ္စည်းများ</strong><small>Product စာရင်း၊ ဈေးနှုန်းနှင့် Stock</small></span>
+                  <span className="mg-quick-arrow">↗</span>
+                </Link>
+                <Link href="/catalogs" className="mg-quick-link">
+                  <span className="mg-quick-icon"><Layers size={20} /></span>
+                  <span className="min-w-0 flex-1"><strong>အုပ်စုနှင့် ပုံများ</strong><small>Catalog နှင့် Media စီမံခန့်ခွဲမှု</small></span>
+                  <span className="mg-quick-arrow">↗</span>
+                </Link>
+              </section>
+              <p className="mg-honesty-note"><ShieldCheck size={15} /> Orders, Customers, Payments နှင့် Telegram Bot စာမျက်နှာများကို API ချိတ်ဆက်မှု အတည်ပြုပြီးမှ ဖွင့်ပေးပါမည်။</p>
             </>
           )}
         </div>
       </main>
+
+      <nav className="mg-mobile-nav lg:hidden" aria-label="Mobile admin navigation">
+        <Link href="/dashboard" className={activeKey === "dashboard" ? "active" : ""}><LayoutDashboard size={19} /><span>Dashboard</span></Link>
+        <Link href="/products" className={activeKey === "products" ? "active" : ""}><Package size={19} /><span>Products</span></Link>
+        <Link href="/catalogs" className={activeKey === "catalogs" ? "active" : ""}><Layers size={19} /><span>Catalogs</span></Link>
+        <button type="button" onClick={() => setMobileMenuOpen((open) => !open)} className={mobileMenuOpen ? "active" : ""}><Menu size={19} /><span>More</span></button>
+      </nav>
+      {mobileMenuOpen && (
+        <div className="mg-mobile-drawer lg:hidden">
+          <button type="button" onClick={() => setMobileMenuOpen(false)} className="mg-drawer-close"><X size={17} /> ပိတ်ရန်</button>
+          <p className="mg-drawer-email">{user.email}</p>
+          <button type="button" onClick={() => void handleLogout()} disabled={loggingOut} className="mg-drawer-logout"><LogOut size={16} /> အကောင့်မှ ထွက်ရန်</button>
+        </div>
+      )}
     </div>
   );
 }
