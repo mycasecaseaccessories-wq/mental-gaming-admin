@@ -19,6 +19,7 @@ Implement the approved Premium Dark interface (Black / Gold / Navy) for the exis
 - Added a dashboard welcome panel, truthful account/API status panels, and quick links to existing Products and Catalogs pages.
 - Applied the approved dark, gold, and navy design tokens and responsive layout styles.
 - Updated Login, authentication status, and error fallback accents to match the approved theme.
+- Added a fail-closed Preview Store API origin policy: Preview deployments cannot silently fall back to the Production Store API; explicit origins must be HTTPS Vercel deployment hosts.
 - Added safe-area spacing for mobile devices and compact-screen adjustments.
 
 ## Existing functionality intentionally preserved
@@ -30,7 +31,7 @@ Implement the approved Premium Dark interface (Black / Gold / Navy) for the exis
 
 ## Verification evidence
 - `pnpm check`: passed.
-- `pnpm test`: 19 tests passed across 3 test files (admin auth, admin product proxy, and site tests).
+- `pnpm test`: 21 tests passed across 3 test files (admin auth, admin product proxy, and site tests), including Preview origin isolation checks.
 - `pnpm build`: passed; Vite transformed 1,693 modules.
 - Vercel Preview deployment for commit `07fd077f84d47da847740d41f10fb619eea4b301`: `READY`.
 - Preview HTML, JavaScript bundle, CSS bundle, and favicon endpoints returned HTTP 200.
