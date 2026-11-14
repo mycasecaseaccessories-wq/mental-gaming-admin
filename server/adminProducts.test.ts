@@ -3,10 +3,29 @@ import { createHash, createHmac, randomBytes } from "node:crypto";
 import express from "express";
 import type { AddressInfo } from "node:net";
 import { createAdminSession, registerAdminAuthRoutes } from "./adminAuth";
-import { registerAdminProductRoutes } from "./adminProducts";
+import { registerAdminProductRoutes, resolveProductApiOrigin } from "./adminProducts";
 
 describe("admin product API proxy", () => {
-  const keys = ["MG_ADMIN_EMAIL", "MG_ADMIN_PASSWORD", "MG_ADMIN_SESSION_SECRET", "MG_PRODUCT_API_SECRET"] as const;
+  it("never falls back to the production Store API from an unconfigured Preview", () => {
+    expect(resolveProductApiOrigin({ VERCEL_ENV: "preview" })).toBeNull();
+  });
+
+  it("accepts only an HTTPS Vercel deployment origin for a configured Preview", () => {
+    expect(resolveProductApiOrigin({
+      VERCEL_ENV: "preview",
+      MG_PRODUCT_API_ORIGIN: "https://mental-gaming-api-git-feature-preview.vercel.app",
+    })).toBe("https://mental-gaming-api-git-feature-preview.vercel.app");
+    expect(resolveProductApiOrigin({
+      VERCEL_ENV: "preview",
+      MG_PRODUCT_API_ORIGIN: "https://example.com",
+    })).toBeNull();
+    expect(resolveProductApiOrigin({
+      VERCEL_ENV: "preview",
+      MG_PRODUCT_API_ORIGIN: "http://mental-gaming-api.vercel.app",
+    })).toBeNull();
+  });
+
+  const keys = ["MG_ADMIN_EMAIL", "MG_ADMIN_PASSWORD", "MG_ADMIN_SESSION_SECRET", "MG_PRODUCT_API_SECRET", "MG_PRODUCT_API_ORIGIN", "VERCEL_ENV"] as const;
   const original = new Map<string, string | undefined>();
   type TestServer = ReturnType<ReturnType<typeof express>["listen"]>;
   let server: TestServer;
