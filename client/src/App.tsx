@@ -25,7 +25,7 @@ function StatusPage({
   return (
     <main className="status-page flex min-h-screen items-center justify-center px-5 py-10 text-white">
       <section className="w-full max-w-md rounded-3xl border border-white/10 bg-[#111827]/90 p-8 text-center shadow-2xl">
-        <div className="brand-mark mx-auto mb-6 flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-300/10 text-cyan-200">
+        <div className="brand-mark mx-auto mb-6 flex h-12 w-12 items-center justify-center rounded-2xl border border-amber-300/20 bg-amber-300/10 text-amber-200">
           <Gamepad2 size={25} strokeWidth={1.8} />
         </div>
         <h1 className="text-xl font-semibold">{title}</h1>
@@ -34,7 +34,7 @@ function StatusPage({
           <button
             type="button"
             onClick={onRetry}
-            className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-cyan-300 px-5 text-sm font-semibold text-slate-950 hover:bg-cyan-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200"
+            className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-amber-300 px-5 text-sm font-semibold text-slate-950 hover:bg-amber-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-200"
           >
             <RotateCw size={16} aria-hidden="true" />
             ထပ်မံစစ်ဆေးရန်
@@ -89,7 +89,7 @@ function AppContent() {
     return (
       <main className="status-page flex min-h-screen items-center justify-center text-white">
         <div className="flex items-center gap-3 text-sm text-slate-300" role="status">
-          <LoaderCircle size={18} className="animate-spin text-cyan-300" aria-hidden="true" />
+          <LoaderCircle size={18} className="animate-spin text-amber-300" aria-hidden="true" />
           Login အခြေအနေကို စစ်ဆေးနေသည်…
         </div>
       </main>
