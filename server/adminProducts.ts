@@ -2,12 +2,34 @@ import { createHash, createHmac, randomBytes } from "node:crypto";
 import { Router, type Express, type Request, type Response } from "express";
 import { getAdminSessionForRequest, isAdminCsrfRequestValid } from "./adminAuth.js";
 
-const PRODUCT_API_ORIGIN = "https://mental-gaming-store.vercel.app";
+const PRODUCTION_PRODUCT_API_ORIGIN = "https://mental-gaming-store.vercel.app";
+
+export function resolveProductApiOrigin(env: NodeJS.ProcessEnv = process.env): string | null {
+  const configured = env.MG_PRODUCT_API_ORIGIN?.trim();
+  if (!configured) return env.VERCEL_ENV === "preview" ? null : PRODUCTION_PRODUCT_API_ORIGIN;
+
+  try {
+    const parsed = new URL(configured);
+    if (
+      parsed.protocol !== "https:" ||
+      parsed.username ||
+      parsed.password ||
+      parsed.port ||
+      parsed.pathname !== "/" ||
+      parsed.search ||
+      parsed.hash ||
+      !(parsed.hostname === "vercel.app" || parsed.hostname.endsWith(".vercel.app"))
+    ) return null;
+    return parsed.origin;
+  } catch {
+    return null;
+  }
+}
 const ADMIN_PREFIX = "/api/admin";
 const SERVICE_PREFIX = "/api/store/admin-portal";
 
 export type ProductProxyOptions = {
-  apiOrigin?: string;
+  apiOrigin?: string | null;
   fetcher?: typeof fetch;
 };
 
@@ -94,6 +116,11 @@ async function sendPortalRequest(
     return;
   }
 
+  if (!options.apiOrigin) {
+    res.status(503).json({ error: "Preview ဆိုင် API လိပ်စာကို လုံခြုံစွာ သတ်မှတ်မထားသေးပါ။" });
+    return;
+  }
+
   const secret = process.env["MG_PRODUCT_API_SECRET"] ?? "";
   if (Buffer.byteLength(secret, "utf8") < 32) {
     res.status(503).json({ error: "ကုန်ပစ္စည်း API လုံခြုံရေးဆက်တင် မပြည့်စုံသေးပါ။" });
@@ -147,7 +174,7 @@ async function sendPortalRequest(
 
 export function registerAdminProductRoutes(app: Express, options: ProductProxyOptions = {}): void {
   const resolvedOptions: Required<ProductProxyOptions> = {
-    apiOrigin: options.apiOrigin ?? PRODUCT_API_ORIGIN,
+    apiOrigin: options.apiOrigin !== undefined ? options.apiOrigin : resolveProductApiOrigin(),
     fetcher: options.fetcher ?? fetch,
   };
   const router = Router();
