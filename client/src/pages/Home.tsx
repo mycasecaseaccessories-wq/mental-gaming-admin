@@ -36,6 +36,7 @@ export default function Home({ user, onLogout }: HomeProps) {
   const [loggingOut, setLoggingOut] = useState(false);
   const [logoutError, setLogoutError] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [tabletMenuOpen, setTabletMenuOpen] = useState(false);
   const isProductsPage = location === "/products";
   const isCatalogsPage = location === "/catalogs";
   const activeKey = isProductsPage ? "products" : isCatalogsPage ? "catalogs" : "dashboard";
@@ -68,7 +69,7 @@ export default function Home({ user, onLogout }: HomeProps) {
       <Link
         key={item.key}
         href={item.href}
-        onClick={() => setMobileMenuOpen(false)}
+        onClick={() => { setMobileMenuOpen(false); setTabletMenuOpen(false); }}
         className={navLinkClass(active)}
         aria-current={active ? "page" : undefined}
       >
@@ -107,6 +108,9 @@ export default function Home({ user, onLogout }: HomeProps) {
       <main className="mg-main min-w-0">
         <header className="mg-topbar">
           <div className="flex min-w-0 items-center gap-3">
+            <button type="button" className="mg-tablet-menu-button hidden md:flex lg:hidden" aria-label="Open admin navigation" aria-expanded={tabletMenuOpen} onClick={() => setTabletMenuOpen((open) => !open)}>
+              {tabletMenuOpen ? <X size={19} /> : <Menu size={19} />}
+            </button>
             <div className="mg-mobile-brand lg:hidden">
               <span className="mg-brand-icon"><Gamepad2 size={19} /></span>
               <span className="mg-brand-name">MENTAL GAMING</span>
@@ -207,7 +211,22 @@ export default function Home({ user, onLogout }: HomeProps) {
         </div>
       </main>
 
-      <nav className="mg-mobile-nav lg:hidden" aria-label="Mobile admin navigation">
+      {tabletMenuOpen && (
+        <>
+          <button type="button" className="mg-tablet-backdrop hidden md:block lg:hidden" aria-label="Close admin navigation" onClick={() => setTabletMenuOpen(false)} />
+          <aside className="mg-tablet-drawer hidden md:flex lg:hidden" aria-label="Tablet admin navigation">
+            <div className="mg-brand-lockup">
+              <div className="mg-brand-icon"><Gamepad2 size={23} strokeWidth={1.7} /></div>
+              <div className="min-w-0"><p className="mg-brand-name">MENTAL GAMING</p><p className="mg-brand-subtitle">ADMIN CONTROL CENTER</p></div>
+            </div>
+            <div className="mg-nav-caption">WORKSPACE</div>
+            <nav className="mg-sidebar-nav" aria-label="Admin navigation">{navItems}</nav>
+            <div className="mg-sidebar-bottom"><div className="mg-security-card"><div className="flex items-center gap-2 text-xs font-semibold text-amber-100"><ShieldCheck size={16} /> Secure admin session</div><p>ခွင့်ပြုထားသော စီမံခန့်ခွဲသူအကောင့်ဖြင့် ဝင်ထားပါသည်။</p></div></div>
+          </aside>
+        </>
+      )}
+
+      <nav className="mg-mobile-nav md:hidden" aria-label="Mobile admin navigation">
         <Link href="/dashboard" className={activeKey === "dashboard" ? "active" : ""}><LayoutDashboard size={19} /><span>Dashboard</span></Link>
         <Link href="/products" className={activeKey === "products" ? "active" : ""}><Package size={19} /><span>Products</span></Link>
         <Link href="/catalogs" className={activeKey === "catalogs" ? "active" : ""}><Layers size={19} /><span>Catalogs</span></Link>
