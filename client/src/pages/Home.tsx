@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import {
   Activity,
@@ -19,6 +19,7 @@ import {
 import type { AdminUser } from "@/lib/adminAuth";
 import Products from "@/pages/Products";
 import Catalogs from "@/pages/Catalogs";
+import { fetchCatalogs } from "@/lib/catalogs";
 
 type HomeProps = {
   user: AdminUser;
@@ -37,6 +38,17 @@ export default function Home({ user, onLogout }: HomeProps) {
   const [logoutError, setLogoutError] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [tabletMenuOpen, setTabletMenuOpen] = useState(false);
+  const [productApiStatus, setProductApiStatus] = useState<"checking" | "connected" | "unavailable">("checking");
+
+  useEffect(() => {
+    let active = true;
+    void fetchCatalogs().then(() => {
+      if (active) setProductApiStatus("connected");
+    }).catch(() => {
+      if (active) setProductApiStatus("unavailable");
+    });
+    return () => { active = false; };
+  }, []);
   const isProductsPage = location === "/products";
   const isCatalogsPage = location === "/catalogs";
   const activeKey = isProductsPage ? "products" : isCatalogsPage ? "catalogs" : "dashboard";
@@ -180,11 +192,11 @@ export default function Home({ user, onLogout }: HomeProps) {
                 <article className="mg-status-card">
                   <div className="mg-status-card-top">
                     <span className="mg-status-icon blue"><Database size={19} /></span>
-                    <span className="mg-status-pill"><span className="mg-live-dot" /> CONNECTED</span>
+                    <span className="mg-status-pill"><span className="mg-live-dot" /> {productApiStatus === "checking" ? "CHECKING" : productApiStatus === "connected" ? "CONNECTED" : "UNAVAILABLE"}</span>
                   </div>
                   <p className="mg-card-label">Product API ချိတ်ဆက်မှု</p>
-                  <p className="mg-card-value">Ready to manage</p>
-                  <p className="mg-card-description">Product နှင့် Catalog စီမံခန့်ခွဲမှုစာမျက်နှာများကို အသုံးပြုနိုင်ပါသည်။</p>
+                  <p className="mg-card-value">{productApiStatus === "checking" ? "စစ်ဆေးနေသည်…" : productApiStatus === "connected" ? "Ready to manage" : "ချိတ်ဆက်မှု မအောင်မြင်ပါ"}</p>
+                  <p className="mg-card-description">{productApiStatus === "checking" ? "Product နှင့် Catalog API ကို အမှန်တကယ် စမ်းသပ်နေပါသည်။" : productApiStatus === "connected" ? "Product နှင့် Catalog စာရင်းများကို API မှ ဖတ်ရှုနိုင်ပါသည်။" : "Product API သို့မဟုတ် Preview Database ကို စစ်ဆေးရန် လိုအပ်ပါသည်။"}</p>
                 </article>
               </section>
 
