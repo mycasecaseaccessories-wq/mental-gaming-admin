@@ -151,6 +151,7 @@ async function sendPortalRequest(
     });
 
     if (!upstream.ok) {
+      console.error("[admin-product-proxy] upstream request failed", { method, path: apiPath, status: upstream.status });
       const status = upstream.status >= 400 && upstream.status < 500 && upstream.status !== 401 && upstream.status !== 403
         ? upstream.status
         : 502;
@@ -167,7 +168,8 @@ async function sendPortalRequest(
       return;
     }
     res.status(upstream.status).setHeader("Cache-Control", "no-store").json(payload);
-  } catch {
+  } catch (error) {
+    console.error("[admin-product-proxy] upstream request error", { method, path: apiPath, errorName: error instanceof Error ? error.name : "UnknownError" });
     res.status(502).json({ error: "ဆိုင်ဒေတာဆာဗာသို့ ချိတ်ဆက်၍ မရပါ။ အင်တာနက်နှင့် API အခြေအနေကို စစ်ဆေးပါ။" });
   }
 }
