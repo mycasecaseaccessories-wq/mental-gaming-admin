@@ -8,10 +8,10 @@ Implement the approved Premium Dark interface (Black / Gold / Navy) for the exis
 | Sub-phase | Scope | Status |
 | --- | --- | --- |
 | 1.1 | Dashboard layout and navigation | Implemented; code checks passed |
-| 1.2 | Desktop, tablet, and mobile responsive layout | Implemented; Preview deployed; visual browser QA blocked by missing Preview auth environment |
-| 1.3 | Existing Products and Catalogs UI/API integration audit | Existing pages and API clients preserved; proxy contract tests pass |
-| 1.4 | Login, session, CSRF, and error-state review | Existing auth model preserved; auth tests pass; status/error accents aligned to gold theme |
-| 1.5 | Preview QA and Phase 1 closeout | Build deployed successfully; runtime configuration blocker remains; no production deployment |
+| 1.2 | Desktop, tablet, and mobile responsive layout | Implemented; Preview deployed; authenticated visual browser QA still pending |
+| 1.3 | Existing Products and Catalogs UI/API integration audit | Admin proxy contract tests pass; live Preview integration blocked by missing safe API credentials and isolated Preview data source |
+| 1.4 | Login, session, CSRF, and error-state review | Existing auth model preserved; tests pass; Preview auth variables configured for Preview only; user confirmed successful Admin login |
+| 1.5 | Preview QA and Phase 1 closeout | Build deployed successfully; API/data isolation and visual QA remain open; no production deployment |
 
 ## Changes on `feature/phase-1-admin-dashboard`
 - Reworked the authenticated dashboard shell with a desktop sidebar, responsive top bar, mobile bottom navigation, and a mobile More drawer.
@@ -33,17 +33,24 @@ Implement the approved Premium Dark interface (Black / Gold / Navy) for the exis
 - `pnpm check`: passed.
 - `pnpm test`: 21 tests passed across 3 test files (admin auth, admin product proxy, and site tests), including Preview origin isolation checks.
 - `pnpm build`: passed; Vite transformed 1,693 modules.
-- Vercel Preview deployment for commit `07fd077f84d47da847740d41f10fb619eea4b301`: `READY`.
-- Preview HTML, JavaScript bundle, CSS bundle, and favicon endpoints returned HTTP 200.
-- Preview `/api/admin-auth/csrf` and `/api/admin-auth/me` returned HTTP 503 because the required Admin auth secrets are not configured for this Preview target.
+- Vercel Preview deployment for commit `024d8fa0ea645ffb05ff92890e8ceffc273ebbe2`: `READY`.
+- Preview `/api/admin-auth/csrf` returned HTTP 200 after Preview-only auth environment targets were corrected.
+- User confirmed the Admin login test completed successfully.
+- API Preview alias `mental-gaming-api-git-work-phase2-admin-readonly-api-mycase.vercel.app` responds to the product portal GET route with HTTP 503: `Product service authentication is not configured`. No signed product request or data mutation was sent.
+- Vercel environment metadata shows `MG_PRODUCT_API_SECRET` on the API project is Production-only; the Admin's `MG_PRODUCT_API_ORIGIN` is scoped to the separate `work/phase2-admin-ui` branch, not this Phase 1 branch.
+- Source audit of API branch `work/phase2-admin-readonly-api` found that its HMAC allowlist still permits product POST/PATCH, catalog PATCH, and media POST. Therefore the branch name does not mean the product/catalog portal is read-only.
+- API source connects through `MONGODB_URI`; no dedicated, branch-scoped Preview database configuration has been verified. The API Preview must not be given a shared secret until database isolation is established.
 
 ## Blocking items before Phase 1 can be marked complete
-1. Provide a safe, branch-scoped Preview auth configuration; do not copy Production credentials into Preview.
-2. Configure a matching non-production Store API endpoint and service secret before testing live Products/Catalogs integration. The current proxy defaults to the production Store API origin, so do not add a Preview secret until a safe Preview origin is configured.
-3. Complete authenticated browser QA at desktop, tablet, and mobile widths after the Preview runtime is safely configured.
+1. Establish a genuinely isolated non-production MongoDB database for the API Preview. Do not reuse the Production database URI or production data connection.
+2. Provide a dedicated Preview-only HMAC secret on both the matching Admin Preview and API Preview after the API branch and database isolation are verified. Do not copy or retarget the Production secret.
+3. Align the Admin Preview branch with a matching API Preview deployment and confirm the origin is not Production.
+4. Decide and implement the safe Preview API contract: either use an isolated Preview database for product/catalog CRUD, or expose read-only endpoints only and defer write-path verification. The current API branch allowlist includes write methods.
+5. Complete authenticated browser QA at desktop, tablet, and mobile widths after the Preview runtime is safely configured.
 
 ## Next steps
 - Keep all changes on the feature branch.
-- Resolve Preview-only configuration safely without changing Production secrets or data.
+- Continue auditing API deployment and database configuration without changing Production settings or data.
+- Do not add Preview API secrets or enable Admin-to-API requests until Preview database isolation is proven.
 - Complete interactive browser QA and re-run the full verification workflow.
 - Only after all five workflow gates pass, open the Phase 1 completion review. Do not merge or deploy to Production automatically.
