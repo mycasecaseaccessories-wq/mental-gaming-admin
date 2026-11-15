@@ -39,18 +39,21 @@ Implement the approved Premium Dark interface (Black / Gold / Navy) for the exis
 - API Preview alias `mental-gaming-api-git-work-phase2-admin-readonly-api-mycase.vercel.app` responds to the product portal GET route with HTTP 503: `Product service authentication is not configured`. No signed product request or data mutation was sent.
 - Vercel environment metadata shows `MG_PRODUCT_API_SECRET` on the API project is Production-only; the Admin's `MG_PRODUCT_API_ORIGIN` is scoped to the separate `work/phase2-admin-ui` branch, not this Phase 1 branch.
 - Source audit of API branch `work/phase2-admin-readonly-api` found that its HMAC allowlist still permits product POST/PATCH, catalog PATCH, and media POST. Therefore the branch name does not mean the product/catalog portal is read-only.
-- API source connects through `MONGODB_URI`; no dedicated, branch-scoped Preview database configuration has been verified. The API Preview must not be given a shared secret until database isolation is established.
+- API source connects through `MONGODB_URI`. The API Vercel project's visible environment metadata contains no `MONGODB_URI` entry, and no dedicated Preview database URI is configured. The API Preview must not be given a shared secret until a separate database exists.
+- User approved creating a separate Preview database. The available connected tools do not provide MongoDB Atlas cluster/database provisioning, and the existing Supabase project is PostgreSQL (not a drop-in replacement for this API's MongoDB native-driver data layer). No incompatible database was substituted and no Production connection was changed.
+- Created a separate API safety branch `feature/phase1-admin-preview-readonly-api` from `work/phase2-admin-readonly-api`. Its HMAC route allowlist now permits GET-only product/catalog reads and existing read-only portal routes; product creation/update, catalog update, and media upload are denied. This branch has not been deployed.
 
 ## Blocking items before Phase 1 can be marked complete
-1. Establish a genuinely isolated non-production MongoDB database for the API Preview. Do not reuse the Production database URI or production data connection.
-2. Provide a dedicated Preview-only HMAC secret on both the matching Admin Preview and API Preview after the API branch and database isolation are verified. Do not copy or retarget the Production secret.
-3. Align the Admin Preview branch with a matching API Preview deployment and confirm the origin is not Production.
-4. Decide and implement the safe Preview API contract: either use an isolated Preview database for product/catalog CRUD, or expose read-only endpoints only and defer write-path verification. The current API branch allowlist includes write methods.
-5. Complete authenticated browser QA at desktop, tablet, and mobile widths after the Preview runtime is safely configured.
+1. Provision a genuinely isolated non-production MongoDB database/cluster and obtain its Preview-only connection URI. This must be done in the MongoDB Atlas account because no Atlas provisioning connector is available in this workspace. Do not reuse the Production database URI or production data connection.
+2. Add the new Preview-only `MONGODB_URI` to the API Preview branch, pointing only to the isolated database. The API project currently has no visible `MONGODB_URI` environment variable.
+3. Provide a dedicated Preview-only HMAC secret on both the matching Admin Preview and API Preview after the API branch and database isolation are verified. Do not copy or retarget the Production secret.
+4. Align the Admin Preview branch with a matching deployment of `feature/phase1-admin-preview-readonly-api` and confirm the origin is not Production.
+5. Complete authenticated browser QA at desktop, tablet, and mobile widths after the Preview runtime is safely configured. Product/catalog write-path QA remains deferred on this read-only branch.
 
 ## Next steps
 - Keep all changes on the feature branch.
-- Continue auditing API deployment and database configuration without changing Production settings or data.
+- Continue the Preview database provisioning handoff in MongoDB Atlas; do not substitute Supabase Postgres for the MongoDB data layer.
 - Do not add Preview API secrets or enable Admin-to-API requests until Preview database isolation is proven.
+- Keep the read-only API safety branch separate from the existing Phase 2 API branch; do not deploy or merge it until its database URI is configured and reviewed.
 - Complete interactive browser QA and re-run the full verification workflow.
 - Only after all five workflow gates pass, open the Phase 1 completion review. Do not merge or deploy to Production automatically.
