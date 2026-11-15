@@ -1,22 +1,24 @@
 # Phase 1 — Admin Dashboard Progress
 
 ## Scope
-Implement the approved Premium Dark interface (Black / Gold / Navy) for the existing Admin application while preserving current authentication and product/catalog API contracts. All work remains on feature branches and Preview deployments only.
+Implement the approved Premium Dark Admin Dashboard (Black / Gold / Navy), preserve the existing authentication and Products/Catalogs contracts, and validate the integration on isolated Preview branches. No Production release is included in Phase 1 closeout.
 
 ## Sub-phase status
 
 | Sub-phase | Scope | Status |
 | --- | --- | --- |
-| 1.1 | Dashboard layout and navigation | Implemented; code checks passed |
+| 1.1 | Dashboard layout and navigation | Implemented; Admin checks, tests, and build passed |
 | 1.2 | Desktop, tablet, and mobile responsive layout | Implemented and deployed to Preview; authenticated visual QA at all breakpoints remains pending |
-| 1.3 | Existing Products and Catalogs UI/API integration audit | UI/API clients preserved; Preview HMAC configured on both branches; live data integration blocked by missing isolated MongoDB Preview URI |
-| 1.4 | Login, session, CSRF, and error-state review | Existing auth model preserved; tests passed; Preview auth configured; user confirmed successful Admin login |
-| 1.5 | Preview QA and Phase 1 closeout | Both latest Preview deployments are READY; database-backed integration, runtime read-only checks, browser QA, and final closeout remain open |
+| 1.3 | Products/Catalogs integration and Preview API safety | Implemented; API route policy, MongoDB integration tests, bundle smoke tests, and dependency audit passed in CI |
+| 1.4 | Login, session, CSRF, and error-state review | Existing auth model preserved; Preview CSRF returned HTTP 200; user confirmed successful Admin login |
+| 1.5 | Preview QA and Phase 1 closeout | Admin/API Preview deployments READY; unauthenticated API guard and health endpoint verified; signed GET end-to-end runtime and browser QA remain pending |
 
 ## Admin branch
+Repository: `mycasecaseaccessories-wq/mental-gaming-admin`
 Branch: `feature/phase-1-admin-dashboard`
-Latest deployed commit: `483e502f418bb8c35ccce0e5e4219777df19c870`
-Latest Preview deployment: `mental-gaming-admin-lnu1xz40c-mycase.vercel.app` — READY.
+Latest commit: `b5f8131233ec9c15280d7102b6ee71857218149f`
+Preview: https://mental-gaming-admin-c71dgh8qa-mycase.vercel.app — READY.
+Draft PR: https://github.com/mycasecaseaccessories-wq/mental-gaming-admin/pull/3
 
 Implemented:
 - Premium dark dashboard shell with desktop sidebar and responsive top bar.
@@ -28,44 +30,70 @@ Implemented:
 - Fail-closed Preview Store API origin policy; Preview cannot silently fall back to Production.
 - Existing Products/Catalogs components and API clients retained.
 
+Admin verification:
+- `pnpm check` passed.
+- `pnpm test` passed — 21 tests across 3 files.
+- `pnpm build` passed.
+- Preview Admin CSRF endpoint returned HTTP 200 after Preview auth environment targets were corrected.
+- User confirmed successful Admin login.
+- Responsive layout code is implemented; independent visual QA at desktop/tablet/mobile remains open.
+
 ## API Preview safety branch
 Repository: `mycasecaseaccessories-wq/Mental-Gaming-Bot`
 Branch: `feature/phase1-admin-preview-readonly-api`
-Latest commit: `b3ed7ea24275a9c0060ff8b96dee535d125aafe0`
-Latest Preview deployment: `mental-gaming-4d7z677yl-mycase.vercel.app` — READY.
-Branch alias: `mental-gaming-api-git-feature-phase1-admin-previe-f29ad7-mycase.vercel.app`.
+Latest commit: `5cc34ebf1932d82418168e0b326f7852fbbe6230`
+Preview: https://mental-gaming-81o8ekpvo-mycase.vercel.app — READY.
+Stable Preview alias: `mental-gaming-api-git-feature-phase1-admin-previe-f29ad7-mycase.vercel.app`.
+Draft PR: https://github.com/mycasecaseaccessories-wq/Mental-Gaming-Bot/pull/26
 
-The API HMAC route policy is restricted to approved GET-only product/catalog reads and allowlisted read-only portal routes. Product POST/PATCH, catalog mutations, media upload, other unsupported routes, and unsupported query parameters are rejected by the policy. Unit tests were added for these allow/deny cases. The latest deployment's Vercel build is READY; the API unit test command has not yet been independently executed in this workflow.
+API safety behavior:
+- HMAC authentication is required for Admin Portal API requests.
+- Product and catalog collection reads and approved portal read-only endpoints are allowlisted.
+- Product POST/PATCH, catalog mutation routes, media upload, unsupported routes, and unsupported query parameters are rejected.
+- Replay protection uses MongoDB-backed nonce claims and fails closed when nonce persistence is unavailable.
+- The Preview API origin is explicit; Admin Preview does not silently fall back to Production Store API.
 
 ## Preview environment isolation
-- A newly generated HMAC secret is configured as sensitive, Preview-only environment variables on both matching feature branches. The values are not displayed or copied into documentation.
-- Admin `MG_PRODUCT_API_ORIGIN` is configured for the matching read-only API Preview branch alias.
-- API Preview environment metadata currently shows only the Preview-branch `MG_PRODUCT_API_SECRET`; it does not show a `MONGODB_URI` variable.
-- The Admin Preview branch has its own Preview-only auth configuration. User confirmed successful Admin login.
+- Admin `MG_PRODUCT_API_ORIGIN` points to the API Preview branch alias.
+- Matching HMAC credentials are configured on the Admin and API Preview feature branches only. Secret values are not documented or exposed.
+- API `MONGODB_URI` is configured for Preview only (global Preview target, not branch-restricted); it was previously set up by the user. No Production URI or Production target was changed.
+- Admin Preview auth variables are configured for Preview; user confirmed successful login.
 - Production environment variables and Production deployment were not changed.
-- No signed product request or database write has been sent.
+- The API security tests and MongoDB integration tests use the isolated CI MongoDB service. No product/catalog mutation was made.
 
-## Verification evidence
-- Admin: `pnpm check` passed.
-- Admin: `pnpm test` passed — 21 tests across 3 files, including Preview origin isolation.
-- Admin: `pnpm build` passed; Vite transformed 1,693 modules.
-- Admin Preview auth CSRF endpoint returned HTTP 200 after Preview-only auth environment targets were corrected.
-- User confirmed the Admin login test completed successfully.
-- Latest Admin and API Preview deployments both report Vercel state `READY`.
-- API Preview branch now has a dedicated GET-only HMAC route policy and route allow/deny tests. The test script includes the new test file; test execution remains unverified.
-- The API source uses MongoDB native driver and requires `MONGODB_URI`. The API Preview branch currently has no visible `MONGODB_URI` environment variable. No isolated Preview database connection has been verified.
-- No Production database, Production HMAC secret, or MY CASE project was changed.
+## Latest API CI verification
+GitHub Actions run: https://github.com/mycasecaseaccessories-wq/Mental-Gaming-Bot/actions/runs/43697367869
+Result: **success**.
 
-## Blocking items before Phase 1 can be marked complete
-1. Provision a separate non-production MongoDB Atlas database/cluster and obtain its connection URI. This workspace has no MongoDB Atlas provisioning connector. Do not reuse Production URI or Production data.
-2. Add that URI as `MONGODB_URI` to the API Preview environment for `feature/phase1-admin-preview-readonly-api` only.
-3. Verify safe API database connectivity and signed GET-only Product/Catalog requests against Preview. Do not send POST/PATCH/DELETE or other writes.
-4. Complete authenticated visual browser QA on desktop, tablet, and mobile.
-5. Run final Admin/API test and build checks, then update the closeout evidence.
+Passed steps:
+- Install dependencies (frozen lockfile)
+- Formatting check
+- Typecheck all TypeScript packages
+- Bot tests
+- API security tests
+- API MongoDB integration tests
+- Build all packages
+- Build Vercel API serverless bundle
+- Smoke test Vercel API bundle
+- Production dependency audit
 
-## Next steps
-- Continue on the two feature branches and Preview deployments only.
-- Wait for the isolated MongoDB Preview URI before attempting database-backed integration.
-- Keep Preview API origin bound to the read-only API Preview alias; never fall back to Production.
-- Do not merge, open a production release, or deploy to Production without explicit user approval.
-- Do not modify the separate MY CASE project.
+The dependency audit initially found vulnerable Mongoose versions in the Bot and Outline Bot workspaces. Both were upgraded to patched Mongoose `8.24.9`, the lockfile was updated, and the final production audit reported **No known vulnerabilities found**.
+
+## Preview runtime checks
+- Latest API Preview deployment for commit `5cc34ebf1932d82418168e0b326f7852fbbe6230` is Vercel `READY`.
+- `/api/healthz` returned HTTP 200 with `{"status":"ok"}`.
+- Unsigned GET requests to `/api/store/admin-portal/products?page=1` and `/api/store/admin-portal/catalogs` returned HTTP 401 Unauthorized, confirming the protected endpoints reject requests without HMAC credentials.
+- A signed GET against the live Preview API has not yet been independently verified. CI has passed the route-policy, nonce-store, and MongoDB integration tests, but this does not replace the live signed-request check.
+- Browser-based visual QA at desktop, tablet, and mobile sizes remains pending.
+
+## Phase 1 closeout gates
+1. Keep Admin and API on the isolated Preview branches until final verification.
+2. Complete a signed GET-only Products and Catalogs request against the live API Preview and confirm it reads from the Preview MongoDB environment.
+3. Complete authenticated visual QA at desktop, tablet, and mobile sizes.
+4. Record final verification evidence and close Phase 1 Preview work.
+5. Do not merge either Draft PR, deploy Production, or modify Production environment variables without explicit user approval.
+
+## Safety boundary
+- Production database, Production HMAC credentials, and Production deployment remain untouched.
+- The separate MY CASE project remains untouched.
+- No product/catalog writes, media uploads, or destructive operations were performed.
