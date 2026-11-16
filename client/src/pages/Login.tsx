@@ -38,11 +38,11 @@ export default function Login({ onLogin }: LoginProps) {
       <div className="relative mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-6xl items-center justify-center">
         <section className="login-card w-full max-w-[430px] rounded-[28px] border border-white/10 bg-[#111827]/90 p-7 shadow-2xl shadow-black/40 sm:p-9">
           <div className="mb-8 flex items-center gap-3">
-            <div className="brand-mark flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-300/10 text-cyan-200">
+            <div className="brand-mark flex h-12 w-12 items-center justify-center rounded-2xl border border-amber-300/20 bg-amber-300/10 text-amber-200">
               <Gamepad2 size={25} strokeWidth={1.8} />
             </div>
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-200">MENTAL GAMING</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-200">MENTAL GAMING</p>
               <p className="mt-1 text-sm text-slate-400">Admin စီမံခန့်ခွဲမှု</p>
             </div>
           </div>
@@ -108,7 +108,7 @@ export default function Login({ onLogin }: LoginProps) {
             <button
               type="submit"
               disabled={busy}
-              className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-cyan-300 px-4 text-sm font-bold text-slate-950 transition duration-200 hover:bg-cyan-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 disabled:cursor-wait disabled:opacity-70"
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-amber-300 px-4 text-sm font-bold text-slate-950 transition duration-200 hover:bg-amber-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-200 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 disabled:cursor-wait disabled:opacity-70"
             >
               {busy ? <LoaderCircle size={17} className="animate-spin" aria-hidden="true" /> : null}
               {busy ? "စစ်ဆေးနေသည်…" : "Admin အဖြစ် ဝင်မည်"}
@@ -116,7 +116,7 @@ export default function Login({ onLogin }: LoginProps) {
           </form>
 
           <div className="mt-7 flex items-start gap-3 border-t border-white/8 pt-5 text-xs leading-5 text-slate-500">
-            <LockKeyhole size={15} className="mt-0.5 shrink-0 text-cyan-300/70" aria-hidden="true" />
+            <LockKeyhole size={15} className="mt-0.5 shrink-0 text-amber-300/70" aria-hidden="true" />
             <p>ခွင့်ပြုထားသော admin အကောင့်သာ ဝင်နိုင်သည်။ Gmail password ကို ဒီ website မသုံးပါ။</p>
           </div>
         </section>
