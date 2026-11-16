@@ -97,3 +97,27 @@ The dependency audit initially found vulnerable Mongoose versions in the Bot and
 - Production database, Production HMAC credentials, and Production deployment remain untouched.
 - The separate MY CASE project remains untouched.
 - No product/catalog writes, media uploads, or destructive operations were performed.
+
+
+## Live Preview integration re-check — 2026-11-16 17:49 UTC
+
+This section supersedes the earlier note that a live signed GET had not yet been attempted.
+
+- User confirmed the Admin Preview login is successful; the Dashboard now correctly shows Product API `UNAVAILABLE`.
+- Admin Preview runtime logs show signed upstream requests being sent to the configured API Preview origin:
+  - `GET /api/store/admin-portal/catalogs` — upstream HTTP 500.
+  - `GET /api/store/admin-portal/products?page=1` — upstream HTTP 500.
+- The Admin proxy signs requests with the Preview HMAC secret. The observed API handler errors are database-related rather than an authentication rejection; this is consistent with the signed request passing route authentication. Do not mark data reads successful.
+- API Preview runtime is Node.js `22.x`, region `iad1`. The earlier Node runtime adjustment did not resolve the database error.
+- API runtime logs explicitly show `MongoServerSelectionError` caused by TLS handshake failure: `tlsv1 alert internal error`, SSL alert number 80. The stack reaches `getDb()/getCollection()` while reading the `products` and `catalogs` collections.
+- Both Product and Catalog read requests fail. No product/catalog writes, image uploads, or destructive operations were performed.
+- The user's existing MongoDB Atlas Cluster0 setup was previously confirmed active in AWS N. Virginia (`us-east-1`), with a database user and Preview-only `MONGODB_URI` configured. Vercel API runtime is also in `iad1`; geographic region mismatch is therefore not the current explanation.
+- The precise Atlas-side cause is not yet confirmed. Atlas Network Access/IP Access List, cluster TLS endpoint/replica-set handshakes, and the stored URI's non-secret structure (scheme/host/database/options) still need verification. Do not change the URI or disable TLS certificate validation blindly.
+- Health endpoint remains HTTP 200; this verifies the API process only, not MongoDB availability.
+- Current five-step integration audit:
+  1. MongoDB/TLS: **FAILED** — exact TLS alert 80 confirmed.
+  2. API database/collection access: **FAILED** — Products and Catalogs cannot complete reads.
+  3. Signed HMAC GET: **REQUEST REACHES API / AUTHENTICATION APPEARS TO PASS** — handler returns DB-related HTTP 500, not an auth rejection; keep as not fully verified until a successful signed GET response.
+  4. Read-only Products/Catalogs: **ATTEMPTED, FAILED** — no data returned; no writes performed.
+  5. Dashboard status: **VERIFIED** — shows `UNAVAILABLE` rather than a false `CONNECTED`.
+- Production environment, Production database, and the separate MY CASE project remain untouched.
